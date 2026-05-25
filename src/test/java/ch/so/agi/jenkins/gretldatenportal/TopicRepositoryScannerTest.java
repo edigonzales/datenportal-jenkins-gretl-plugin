@@ -1,0 +1,238 @@
+package ch.so.agi.jenkins.gretldatenportal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class TopicRepositoryScannerTest {
+    @TempDir
+    Path tempDir;
+
+    private final TopicRepositoryScanner scanner = new TopicRepositoryScanner();
+
+    @Test
+    void scansValidRepository() throws IOException {
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", true);
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        OrganizationUnit organization = result.getOrganizations().get(0);
+        assertEquals("afu", organization.getId());
+        assertTrue(organization.isJobDefinitionPresent());
+        assertEquals(2, organization.getDatasets().size());
+        assertEquals("gretl-datenportal-afu", organization.getDefaultJobName());
+        assertTrue(organization.getDatasets().stream()
+                .anyMatch(dataset -> dataset.getId().equals("ch.so.gewaesser.wasserqualitaet")
+                        && dataset.getDefinition().isSeries()));
+    }
+
+    @Test
+    void reportsMissingDatasetJson() throws IOException {
+        writeOrganization("afu");
+        Files.createDirectories(tempDir.resolve("afu/ch.so.missing.definition"));
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("missing dataset.json")));
+        assertEquals(1, result.getOrganizations().get(0).getDatasets().size());
+        assertFalse(result.getOrganizations().get(0).getDatasets().get(0).isDefinitionValid());
+    }
+
+    @Test
+    void validatesSeriesBoolean() throws IOException {
+        writeOrganization("afu");
+        Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.invalid.series"));
+        Files.writeString(
+                datasetDir.resolve("dataset.json"),
+                """
+                {
+                  "id": "ch.so.invalid.series",
+                  "title": "Invalid Series",
+                  "series": "true"
+                }
+                """,
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("must be true or false")));
+    }
+
+    @Test
+    void reportsDatasetIdMismatch() throws IOException {
+        writeOrganization("afu");
+        Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.folder.name"));
+        Files.writeString(
+                datasetDir.resolve("dataset.json"),
+                """
+                {
+                  "id": "ch.so.other.name",
+                  "title": "Wrong ID",
+                  "series": false
+                }
+                """,
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("id must match")));
+    }
+
+    @Test
+    void ignoresHiddenDirectoriesAndReportsEmptyOrganization() throws IOException {
+        writeOrganization("leere-org");
+        Files.createDirectories(tempDir.resolve(".ignored/ch.so.hidden"));
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        assertEquals("leere-org", result.getOrganizations().get(0).getId());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("contains no dataset folders")));
+    }
+
+    @Test
+    void appliesSharedDefaultsAndDoesNotScanSharedAsOrganization() throws IOException {
+        writeSharedDefaults(
+                """
+                execution:
+                  gradleTask: publishShared
+                  timeoutMinutes: 25
+                gui:
+                  fields:
+                    - id: COMMENT
+                      label: Gemeinsamer Kommentar
+                notifications:
+                  email:
+                    recipients:
+                      - data@example.invalid
+                """);
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        OrganizationUnit organization = result.getOrganizations().get(0);
+        assertEquals("afu", organization.getId());
+        assertEquals("publishShared", organization.getJobDefinition().getGradleTask());
+        assertEquals(25, organization.getJobDefinition().getTimeoutMinutes());
+        assertEquals(
+                "data@example.invalid",
+                organization.getNotificationConfiguration().getEmailRecipientsCsv());
+        GuiDefinition gui = new DatenportalJobResolver().resolve(organization, organization.getDatasets().get(0))
+                .getGuiDefinition();
+        assertEquals("Gemeinsamer Kommentar", field(gui, "COMMENT").getLabel());
+    }
+
+    @Test
+    void organizationExecutionOverridesSharedDefaults() throws IOException {
+        writeSharedDefaults(
+                """
+                execution:
+                  gradleTask: publishShared
+                  timeoutMinutes: 25
+                """);
+        writeOrganization(
+                "afu",
+                """
+                id: afu
+                execution:
+                  gradleTask: publishAfu
+                  timeoutMinutes: 45
+                """);
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        OrganizationUnit organization = result.getOrganizations().get(0);
+        assertEquals("publishAfu", organization.getJobDefinition().getGradleTask());
+        assertEquals(45, organization.getJobDefinition().getTimeoutMinutes());
+    }
+
+    @Test
+    void allowsSharedDirectoryWithoutDefaultsFile() throws IOException {
+        Files.createDirectories(tempDir.resolve("shared"));
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        assertEquals("publishToDatenportal", result.getOrganizations().get(0).getJobDefinition().getGradleTask());
+    }
+
+    @Test
+    void reportsMissingOrganizationJobDefinition() throws IOException {
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("missing gretl-datenportal-job.yaml")));
+        assertFalse(result.getOrganizations().get(0).isJobDefinitionPresent());
+    }
+
+    private void writeOrganization(String id) throws IOException {
+        writeOrganization(id, "id: " + id + "\n");
+    }
+
+    private void writeOrganization(String id, String yaml) throws IOException {
+        Path orgDir = Files.createDirectories(tempDir.resolve(id));
+        Files.writeString(
+                orgDir.resolve("gretl-datenportal-job.yaml"),
+                yaml,
+                StandardCharsets.UTF_8);
+    }
+
+    private void writeSharedDefaults(String yaml) throws IOException {
+        Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
+        Files.writeString(
+                sharedDir.resolve("gretl-datenportal-defaults.yaml"),
+                yaml,
+                StandardCharsets.UTF_8);
+    }
+
+    private void writeDataset(String orgId, String datasetId, String title, boolean series) throws IOException {
+        Path datasetDir = Files.createDirectories(tempDir.resolve(orgId).resolve(datasetId));
+        Files.writeString(
+                datasetDir.resolve("dataset.json"),
+                """
+                {
+                  "id": "%s",
+                  "title": "%s",
+                  "series": %s
+                }
+                """.formatted(datasetId, title, series),
+                StandardCharsets.UTF_8);
+    }
+
+    private GuiFieldDefinition field(GuiDefinition definition, String id) {
+        return definition.getFields().stream()
+                .filter(field -> field.getId().equals(id))
+                .findFirst()
+                .orElseThrow();
+    }
+}

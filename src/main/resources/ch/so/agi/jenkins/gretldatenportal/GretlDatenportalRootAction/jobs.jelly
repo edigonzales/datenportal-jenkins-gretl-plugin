@@ -1,0 +1,68 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
+    <l:layout title="${it.displayName}">
+        <l:main-panel>
+            <link rel="stylesheet" href="${rootURL}/plugin/jenkins-gretl-datenportal-plugin/css/gretl-datenportal.css" />
+
+            <j:set var="jobSummaries" value="${it.organizationJobSummaries}" />
+
+            <div class="gdp-page">
+                <div class="gdp-page-header gdp-page-header--with-actions">
+                    <div>
+                        <a class="gdp-back-link" href="${rootURL}/${it.urlName}">Zurück zu ausgeführten Jobs</a>
+                        <p class="gdp-eyebrow">GRETL</p>
+                        <h1>Jobs starten</h1>
+                        <p class="gdp-page-description">Pro Organisationseinheit gibt es einen GRETL-Datenportal-Job.</p>
+                    </div>
+                </div>
+
+                <section class="gdp-panel gdp-job-overview">
+                    <j:choose>
+                        <j:when test="${jobSummaries.isEmpty()}">
+                            <div class="gdp-empty-state">
+                                <h3>Keine Organisationsjobs gefunden.</h3>
+                                <p>Prüfe die Themen-Repo-Konfiguration.</p>
+                            </div>
+                        </j:when>
+                        <j:otherwise>
+                            <div class="gdp-job-list">
+                                <j:forEach var="job" items="${jobSummaries}">
+                                    <article class="gdp-job-row">
+                                        <div class="gdp-job-card__icon" aria-hidden="true">G</div>
+                                        <div class="gdp-job-row__main">
+                                            <div class="gdp-run-row__title">
+                                                <span>${job.title}</span>
+                                                <j:if test="${job.status != 'ready'}">
+                                                    <span class="gdp-badge" data-gdp-status="${job.status}">${job.statusLabel}</span>
+                                                </j:if>
+                                            </div>
+                                            <p>${job.description}</p>
+                                            <div class="gdp-run-row__meta">
+                                                <span>Organisation: <span>${job.organization}</span></span>
+                                                <span>Jobname: <span>${job.jobName}</span></span>
+                                                <span>Datensätze: <span>${job.datasetCount}</span></span>
+                                            </div>
+                                        </div>
+                                        <div class="gdp-run-row__actions">
+                                            <j:choose>
+                                                <j:when test="${job.startable}">
+                                                    <a class="jenkins-button jenkins-button--primary" href="${rootURL}/${it.urlName}/start?organization=${job.organization}">Starten</a>
+                                                </j:when>
+                                                <j:when test="${!job.canBuild}">
+                                                    <button class="jenkins-button" disabled="disabled">Keine Berechtigung</button>
+                                                </j:when>
+                                                <j:otherwise>
+                                                    <button class="jenkins-button" disabled="disabled">Nicht startbar</button>
+                                                </j:otherwise>
+                                            </j:choose>
+                                        </div>
+                                    </article>
+                                </j:forEach>
+                            </div>
+                        </j:otherwise>
+                    </j:choose>
+                </section>
+            </div>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>

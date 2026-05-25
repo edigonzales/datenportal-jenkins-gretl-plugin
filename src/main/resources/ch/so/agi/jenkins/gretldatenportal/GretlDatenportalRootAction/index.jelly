@@ -1,0 +1,148 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
+    <l:layout title="${it.displayName}">
+        <l:main-panel>
+            <link rel="stylesheet" href="${rootURL}/plugin/jenkins-gretl-datenportal-plugin/css/gretl-datenportal.css" />
+            <script src="${rootURL}/plugin/jenkins-gretl-datenportal-plugin/js/gretl-datenportal.js"></script>
+
+            <j:set var="scanResult" value="${it.scanResult}" />
+            <j:set var="executedRuns" value="${it.executedRuns}" />
+
+            <div class="gdp-page">
+                <div class="gdp-page-header gdp-page-header--with-actions">
+                    <div>
+                        <p class="gdp-eyebrow">GRETL</p>
+                        <h1>${it.displayName}</h1>
+                        <p class="gdp-page-description">Ausgeführte Datenportal-Jobs prüfen.</p>
+                    </div>
+                    <div class="gdp-header-actions">
+                        <a class="jenkins-button jenkins-button--primary" href="${rootURL}/${it.urlName}/jobs">Jobs starten</a>
+                    </div>
+                </div>
+
+                <div class="gdp-summary">
+                    <div class="gdp-summary-card">
+                        <span class="gdp-summary-label">Themen-Repo</span>
+                        <strong>${scanResult.repositoryPathString}</strong>
+                    </div>
+                    <div class="gdp-summary-card">
+                        <span class="gdp-summary-label">Ausgeführte Jobs</span>
+                        <strong>${executedRuns.size()}</strong>
+                    </div>
+                </div>
+
+                <j:if test="${scanResult.hasMessages()}">
+                    <section class="gdp-panel">
+                        <div class="gdp-panel__header">
+                            <h2>Hinweise</h2>
+                        </div>
+                        <table class="pane gdp-table">
+                            <thead>
+                                <tr>
+                                    <th>Typ</th>
+                                    <th>Meldung</th>
+                                    <th>Pfad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <j:forEach var="message" items="${scanResult.messages}">
+                                    <tr>
+                                        <td><span class="gdp-badge gdp-badge--warning">${message.severity}</span></td>
+                                        <td>${message.message}</td>
+                                        <td class="gdp-muted">${message.path}</td>
+                                    </tr>
+                                </j:forEach>
+                            </tbody>
+                        </table>
+                    </section>
+                </j:if>
+
+                <section class="gdp-panel gdp-run-overview" data-gdp-filter-list="runs">
+                    <div class="gdp-panel__header gdp-panel__header--split">
+                        <div>
+                            <h2>Ausgeführte Jobs</h2>
+                            <p>Alle Builds der GRETL-Datenportal-Jobs, neueste Ausführung zuerst.</p>
+                        </div>
+                    </div>
+
+                    <div class="gdp-toolbar">
+                        <label class="gdp-filter">
+                            <span>Organisation</span>
+                            <select class="gdp-control gdp-select" data-gdp-filter-control="organization">
+                                <option value="">Alle</option>
+                                <j:forEach var="organization" items="${it.runFilterOrganizations}">
+                                    <option value="${organization}">${organization}</option>
+                                </j:forEach>
+                            </select>
+                        </label>
+                        <label class="gdp-filter">
+                            <span>Datensatz</span>
+                            <select class="gdp-control gdp-select" data-gdp-filter-control="dataset">
+                                <option value="">Alle</option>
+                                <j:forEach var="dataset" items="${it.runFilterDatasets}">
+                                    <option value="${dataset}">${dataset}</option>
+                                </j:forEach>
+                            </select>
+                        </label>
+                        <label class="gdp-filter">
+                            <span>Status</span>
+                            <select class="gdp-control gdp-select" data-gdp-filter-control="status">
+                                <option value="">Alle</option>
+                                <option value="SUCCESS">Erfolgreich</option>
+                                <option value="FAILURE">Fehlgeschlagen</option>
+                                <option value="UNSTABLE">Instabil</option>
+                                <option value="ABORTED">Abgebrochen</option>
+                                <option value="RUNNING">Läuft</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <j:choose>
+                        <j:when test="${executedRuns.isEmpty()}">
+                            <div class="gdp-empty-state">
+                                <h3>Noch keine Jobs ausgeführt.</h3>
+                                <p>Sobald ein GRETL-Datenportal-Job gestartet wurde, erscheint er hier.</p>
+                            </div>
+                        </j:when>
+                        <j:otherwise>
+                            <div class="gdp-run-list">
+                                <j:forEach var="run" items="${executedRuns}">
+                                    <article class="gdp-run-row"
+                                             data-gdp-filter-item="true"
+                                             data-gdp-organization="${run.organizationValue}"
+                                             data-gdp-dataset="${run.datasetValue}"
+                                             data-gdp-status="${run.status}">
+                                        <div class="gdp-run-row__status">
+                                            <span class="gdp-badge" data-gdp-status="${run.status}">${run.statusLabel}</span>
+                                        </div>
+                                        <div class="gdp-run-row__main">
+                                            <div class="gdp-run-row__title">
+                                                <span>${run.displayTitle}</span>
+                                            </div>
+                                            <div class="gdp-run-row__meta">
+                                                <span>Organisation: <span>${run.organization}</span></span>
+                                                <span>Datensatz: <span>${run.dataset}</span></span>
+                                                <span>Jobname: <span>${run.jobFullName}</span></span>
+                                            </div>
+                                        </div>
+                                        <div class="gdp-run-row__time">
+                                            <span>${run.startTime}</span>
+                                            <span>${run.duration}</span>
+                                        </div>
+                                        <div class="gdp-run-row__actions">
+                                            <a class="jenkins-button" href="${rootURL}/${it.urlName}/run?job=${run.jobNameEncoded}&amp;build=${run.buildNumber}">Details</a>
+                                        </div>
+                                    </article>
+                                </j:forEach>
+                            </div>
+                            <div class="gdp-empty-state gdp-empty-state--filtered" data-gdp-filter-empty="true" hidden="hidden">
+                                <h3>Keine passenden Ausführungen gefunden.</h3>
+                                <p>Filter zurücksetzen, um alle ausgeführten Jobs zu sehen.</p>
+                            </div>
+                        </j:otherwise>
+                    </j:choose>
+                </section>
+            </div>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>
