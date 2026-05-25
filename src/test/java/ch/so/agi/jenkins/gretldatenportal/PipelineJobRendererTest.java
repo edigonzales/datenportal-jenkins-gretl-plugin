@@ -9,11 +9,107 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class PipelineJobRendererTest {
+    private static final String TEMPLATE = """
+            pipeline {
+                agent any
+
+                options {
+                    timeout(time: @@TIMEOUT_MINUTES@@, unit: 'MINUTES')
+                    disableConcurrentBuilds()
+                }
+
+                stages {
+                    stage('Validate parameters') {
+                        steps {
+                            script {
+                                if (!(params.ORGANISATION ?: '').trim()) {
+                                    error('ORGANISATION muss gesetzt sein.')
+                                }
+                                if (!(params.DATASET ?: '').trim()) {
+                                    error('DATASET muss gesetzt sein.')
+                                }
+                                if (!(params.ENVIRONMENT ?: '').trim()) {
+                                    error('ENVIRONMENT muss gesetzt sein.')
+                                }
+                                if (params.ENVIRONMENT == 'production' && params.CONFIRM_PRODUCTION != true) {
+                                    error('CONFIRM_PRODUCTION muss fuer production gesetzt sein.')
+                                }
+                                currentBuild.displayName = "#${env.BUILD_NUMBER} ${params.ORGANISATION} / ${params.DATASET}"
+                                currentBuild.description = "Datenportal: ${params.ORGANISATION} / ${params.DATASET} / ${params.ENVIRONMENT}"
+                            }
+                        }
+                    }
+
+                    stage('Run GRETL Datenportal Job') {
+                        steps {
+                            script {
+                                def gradleArgs = [
+                                    "-Porganisation=${params.ORGANISATION}",
+                                    "-Pdataset=${params.DATASET}",
+                                    "-Penvironment=${params.ENVIRONMENT}",
+                                    "-PdryRun=${params.DRY_RUN}"
+                                ]
+                                if ((params.SERIES_ID ?: '').trim()) {
+                                    gradleArgs << "-PseriesId=${params.SERIES_ID}"
+                                }
+
+                                def metadataPresent = false
+                                def dataPresent = false
+
+                                try {
+                                    withFileParameter('METADATA_FILE') {
+                                        if (env.METADATA_FILE) {
+                                            metadataPresent = true
+                                            gradleArgs << "-PmetadataFile=${env.METADATA_FILE}"
+                                            gradleArgs << "-PmetadataFileName=${env.METADATA_FILE_FILENAME ?: 'METADATA_FILE'}"
+                                        }
+                                    }
+                                } catch (ignored) {
+                                    echo 'No METADATA_FILE uploaded.'
+                                }
+
+                                try {
+                                    withFileParameter('DATA_FILE') {
+                                        if (env.DATA_FILE) {
+                                            dataPresent = true
+                                            gradleArgs << "-PdataFile=${env.DATA_FILE}"
+                                            gradleArgs << "-PdataFileName=${env.DATA_FILE_FILENAME ?: 'DATA_FILE'}"
+                                        }
+                                    }
+                                } catch (ignored) {
+                                    echo 'No DATA_FILE uploaded.'
+                                }
+
+                                if (!metadataPresent && !dataPresent) {
+                                    error('Mindestens METADATA_FILE oder DATA_FILE muss hochgeladen werden.')
+                                }
+
+                                sh "./gradlew @@GRADLE_TASK@@ ${gradleArgs.join(' ')}"
+                            }
+                        }
+                    }
+                }
+
+            @@POST_BLOCK@@
+            }
+
+            String gretlDatenportalEmailBody(String status) {
+                return \"\"\"Status: ${status}
+            Organisation: ${params.ORGANISATION}
+            Datensatz: ${params.DATASET}
+            Umgebung: ${params.ENVIRONMENT}
+            Dry Run: ${params.DRY_RUN}
+            Build: ${env.BUILD_URL}
+            Console: ${env.BUILD_URL}console
+            \"\"\"
+            }
+            """;
+
     @Test
     void rendersUploadAndGradleContract() {
         OrganizationUnit organization = organization("publishToDatenportal", 60, NotificationConfiguration.disabled());
 
-        String script = new PipelineJobRenderer().render(organization, NotificationConfiguration.disabled());
+        String script = new PipelineJobRenderer().renderTemplate(TEMPLATE, organization, NotificationConfiguration.disabled());
 
         assertTrue(script.contains("withFileParameter('METADATA_FILE')"));
         assertTrue(script.contains("withFileParameter('DATA_FILE')"));
@@ -27,10 +123,10 @@ class PipelineJobRendererTest {
     }
 
     @Test
-    void rendersBundledTemplateDeterministically() {
+    void rendersTemplateDeterministically() {
         OrganizationUnit organization = organization("publishToDatenportal", 60, NotificationConfiguration.disabled());
 
-        String script = new PipelineJobRenderer().render(organization, NotificationConfiguration.disabled());
+        String script = new PipelineJobRenderer().renderTemplate(TEMPLATE, organization, NotificationConfiguration.disabled());
 
         assertEquals(
                 """
@@ -132,7 +228,7 @@ class PipelineJobRendererTest {
     }
 
     @Test
-    void rendersBundledTemplateWithOrganizationSpecificValues() {
+    void rendersTemplateWithOrganizationSpecificValues() {
         NotificationConfiguration notifications = new NotificationConfiguration(
                 true,
                 NotificationConfiguration.Mode.APPEND,
@@ -144,7 +240,7 @@ class PipelineJobRendererTest {
                 false);
         OrganizationUnit organization = organization("publishCustom", 45, notifications);
 
-        String script = new PipelineJobRenderer().render(organization, notifications);
+        String script = new PipelineJobRenderer().renderTemplate(TEMPLATE, organization, notifications);
 
         assertTrue(script.contains("timeout(time: 45, unit: 'MINUTES')"));
         assertTrue(script.contains("./gradlew publishCustom"));

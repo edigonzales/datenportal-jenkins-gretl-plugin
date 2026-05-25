@@ -15,6 +15,7 @@ public final class TopicRepositoryScanner {
     public static final String DATASET_DEFINITION_FILE = "dataset.json";
     public static final String DATASET_GUI_FILE = "dataset-gui.yaml";
     public static final String SHARED_DIR = "shared";
+    public static final String SHARED_JENKINSFILE = "Jenkinsfile";
     public static final String REPOSITORY_DEFAULTS_FILE = "gretl-datenportal-defaults.yaml";
 
     private static final Pattern REPOSITORY_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]*$");
@@ -82,6 +83,7 @@ public final class TopicRepositoryScanner {
                     repositoryPath));
         }
 
+        validateSharedDefaultPipeline(repositoryPath, repositoryDefaults, organizations, messages);
         return new ScanResult(repositoryPath, organizations, messages);
     }
 
@@ -224,6 +226,45 @@ public final class TopicRepositoryScanner {
             return repositoryDefaults.getTimeoutMinutes();
         }
         return 60;
+    }
+
+    private void validateSharedDefaultPipeline(
+            Path repositoryPath,
+            RepositoryDefaults repositoryDefaults,
+            List<OrganizationUnit> organizations,
+            List<ValidationMessage> messages) {
+        boolean sharedDefaultRequired = organizations.stream()
+                .anyMatch(organization -> requiresImplicitSharedDefault(organization, repositoryDefaults));
+        if (!sharedDefaultRequired) {
+            return;
+        }
+
+        Path sharedJenkinsfile = sharedJenkinsfilePath(repositoryPath, repositoryDefaults);
+        if (!Files.isRegularFile(sharedJenkinsfile)) {
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Topic repository is missing shared/Jenkinsfile for organizations without a custom Jenkinsfile.",
+                    sharedJenkinsfile));
+        }
+    }
+
+    private boolean requiresImplicitSharedDefault(
+            OrganizationUnit organization,
+            RepositoryDefaults repositoryDefaults) {
+        if (organization.getJobDefinition().isJenkinsfileSpecified()) {
+            return false;
+        }
+        if (Files.isRegularFile(organization.getPath().resolve(SHARED_JENKINSFILE))) {
+            return false;
+        }
+        return repositoryDefaults == null || !repositoryDefaults.hasJenkinsfile();
+    }
+
+    private Path sharedJenkinsfilePath(Path repositoryPath, RepositoryDefaults repositoryDefaults) {
+        if (repositoryDefaults != null && repositoryDefaults.hasSharedPath()) {
+            return repositoryDefaults.getSharedPath().resolve(SHARED_JENKINSFILE);
+        }
+        return repositoryPath.resolve(SHARED_DIR).resolve(SHARED_JENKINSFILE);
     }
 
     private DatasetEntry scanDataset(Path datasetDir, List<ValidationMessage> messages) {

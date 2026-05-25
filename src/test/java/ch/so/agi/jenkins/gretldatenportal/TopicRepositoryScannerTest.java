@@ -19,6 +19,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void scansValidRepository() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("afu");
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", true);
         writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
@@ -39,6 +40,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void reportsMissingDatasetJson() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("afu");
         Files.createDirectories(tempDir.resolve("afu/ch.so.missing.definition"));
 
@@ -53,6 +55,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void validatesSeriesBoolean() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("afu");
         Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.invalid.series"));
         Files.writeString(
@@ -75,6 +78,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void reportsDatasetIdMismatch() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("afu");
         Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.folder.name"));
         Files.writeString(
@@ -97,6 +101,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void ignoresHiddenDirectoriesAndReportsEmptyOrganization() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("leere-org");
         Files.createDirectories(tempDir.resolve(".ignored/ch.so.hidden"));
 
@@ -111,6 +116,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void appliesSharedDefaultsAndDoesNotScanSharedAsOrganization() throws IOException {
+        writeSharedJenkinsfile();
         writeSharedDefaults(
                 """
                 execution:
@@ -146,6 +152,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void organizationExecutionOverridesSharedDefaults() throws IOException {
+        writeSharedJenkinsfile();
         writeSharedDefaults(
                 """
                 execution:
@@ -171,8 +178,8 @@ class TopicRepositoryScannerTest {
     }
 
     @Test
-    void allowsSharedDirectoryWithoutDefaultsFile() throws IOException {
-        Files.createDirectories(tempDir.resolve("shared"));
+    void allowsSharedDirectoryWithoutDefaultsFileWhenSharedJenkinsfileExists() throws IOException {
+        writeSharedJenkinsfile();
         writeOrganization("afu");
         writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
 
@@ -185,6 +192,7 @@ class TopicRepositoryScannerTest {
 
     @Test
     void reportsMissingOrganizationJobDefinition() throws IOException {
+        writeSharedJenkinsfile();
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
 
         ScanResult result = scanner.scan(tempDir);
@@ -193,6 +201,30 @@ class TopicRepositoryScannerTest {
         assertTrue(result.getMessages().stream()
                 .anyMatch(message -> message.getMessage().contains("missing gretl-datenportal-job.yaml")));
         assertFalse(result.getOrganizations().get(0).isJobDefinitionPresent());
+    }
+
+    @Test
+    void reportsMissingSharedJenkinsfileWhenOrganizationNeedsRepoDefault() throws IOException {
+        Files.createDirectories(tempDir.resolve("shared"));
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("missing shared/Jenkinsfile")));
+    }
+
+    @Test
+    void doesNotRequireSharedJenkinsfileWhenAllOrganizationsHaveLocalOverrides() throws IOException {
+        writeOrganization("statistikdienst");
+        writeOrganizationJenkinsfile("statistikdienst", "pipeline { /* organization */ }");
+        writeDataset("statistikdienst", "ch.so.statistik.bevoelkerung", "Bevoelkerung", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
     }
 
     private void writeOrganization(String id) throws IOException {
@@ -213,6 +245,23 @@ class TopicRepositoryScannerTest {
                 sharedDir.resolve("gretl-datenportal-defaults.yaml"),
                 yaml,
                 StandardCharsets.UTF_8);
+    }
+
+    private void writeSharedJenkinsfile() throws IOException {
+        Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
+        Files.writeString(
+                sharedDir.resolve("Jenkinsfile"),
+                """
+                pipeline {
+                    /* shared */
+                }
+                """,
+                StandardCharsets.UTF_8);
+    }
+
+    private void writeOrganizationJenkinsfile(String orgId, String script) throws IOException {
+        Path orgDir = Files.createDirectories(tempDir.resolve(orgId));
+        Files.writeString(orgDir.resolve("Jenkinsfile"), script, StandardCharsets.UTF_8);
     }
 
     private void writeDataset(String orgId, String datasetId, String title, boolean series) throws IOException {

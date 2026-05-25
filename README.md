@@ -16,13 +16,11 @@ specification:
 - Default GUI model, GUI merge, and server-side start-form validation.
 - Seed builder and Pipeline job generator for generated workflow jobs.
 - Custom organization `Jenkinsfile` resolution before falling back to the
-  shared repo default and finally the bundled plugin default Pipeline.
-- Bundled default Pipeline template stored as
-  `src/main/resources/ch/so/agi/jenkins/gretldatenportal/shared/Jenkinsfile`.
+  repo-owned default template from `shared/Jenkinsfile`.
 - YAML permission model for `permissions.read` and `permissions.build`, with
   server-side RootAction checks.
 - Default Pipeline script renderer with `stashedFile` uploads and email-ext
-  post-block support.
+  post-block support for the repo-wide shared template.
 - The `MODE` build parameter is currently reserved and not rendered or passed
   to Gradle.
 - Basic start and run-detail Jelly views.
@@ -57,10 +55,36 @@ Resolution order for generated jobs:
 2. `Jenkinsfile` in the organization folder
 3. `execution.jenkinsfile` from `shared/gretl-datenportal-defaults.yaml`
 4. `shared/Jenkinsfile`
-5. Bundled plugin default template
 
-This keeps organization-specific overrides working while making the shared
-folder the standard place for the common default Pipeline.
+`shared/Jenkinsfile` is the canonical repo-level default and may use these
+placeholders, which the plugin resolves from merged shared and organization
+defaults:
+
+- `@@TIMEOUT_MINUTES@@`
+- `@@GRADLE_TASK@@`
+- `@@POST_BLOCK@@`
+
+### How Placeholder Replacement Works
+
+`@@NAME@@` is a plain-text marker, not a template engine feature of Jenkins or
+Groovy.
+
+- Only exact known markers are replaced.
+- `@@TIMEOUT_MINUTES@@` is replaced from `JobDefinition.timeoutMinutes`.
+- `@@GRADLE_TASK@@` is replaced from `JobDefinition.gradleTask`.
+- `@@POST_BLOCK@@` is replaced from `NotificationConfiguration` via
+  `EmailNotificationService`.
+- When notifications are disabled, `@@POST_BLOCK@@` falls back to
+  `post { always { echo 'GRETL Datenportal job finished.' } }`.
+- Placeholder replacement happens only for the implicit repo-level
+  `shared/Jenkinsfile`.
+- Organization `Jenkinsfile` files and explicit `execution.jenkinsfile` paths
+  are loaded literally and are not interpolated.
+- Unknown markers remain unchanged.
+
+If an organization has no own Pipeline override and no explicit
+`execution.jenkinsfile` path resolves first, then `shared/Jenkinsfile` must
+exist.
 
 ## Local Jenkins Dev Setup
 

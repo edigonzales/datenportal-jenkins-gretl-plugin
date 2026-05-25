@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class PipelineScriptResolver {
+    private static final String JENKINSFILE_NAME = "Jenkinsfile";
+
     private final PipelineJobRenderer pipelineJobRenderer;
 
     public PipelineScriptResolver() {
@@ -22,7 +24,7 @@ public final class PipelineScriptResolver {
             return Files.readString(explicit, StandardCharsets.UTF_8);
         }
 
-        Path implicit = organization.getPath().resolve("Jenkinsfile");
+        Path implicit = organization.getPath().resolve(JENKINSFILE_NAME);
         if (Files.isRegularFile(implicit)) {
             return Files.readString(implicit, StandardCharsets.UTF_8);
         }
@@ -32,12 +34,15 @@ public final class PipelineScriptResolver {
             return Files.readString(sharedExplicit, StandardCharsets.UTF_8);
         }
 
-        Path sharedImplicit = implicitSharedJenkinsfile(organization.getRepositoryDefaults());
+        Path sharedImplicit = implicitSharedJenkinsfile(organization);
         if (sharedImplicit != null) {
-            return Files.readString(sharedImplicit, StandardCharsets.UTF_8);
+            return pipelineJobRenderer.renderTemplate(
+                    Files.readString(sharedImplicit, StandardCharsets.UTF_8),
+                    organization,
+                    organization.getNotificationConfiguration());
         }
 
-        return pipelineJobRenderer.renderBundledDefault(organization, organization.getNotificationConfiguration());
+        throw new IOException("Shared default Jenkinsfile not found: " + defaultSharedJenkinsfilePath(organization));
     }
 
     private Path configuredOrganizationJenkinsfile(OrganizationUnit organization) throws IOException {
@@ -52,12 +57,22 @@ public final class PipelineScriptResolver {
         return configuredJenkinsfile(repositoryDefaults.getSharedPath(), repositoryDefaults.getJenkinsfile());
     }
 
-    private Path implicitSharedJenkinsfile(RepositoryDefaults repositoryDefaults) {
-        if (repositoryDefaults == null || !repositoryDefaults.hasSharedPath()) {
-            return null;
-        }
-        Path implicit = repositoryDefaults.getSharedPath().resolve("Jenkinsfile");
+    private Path implicitSharedJenkinsfile(OrganizationUnit organization) throws IOException {
+        Path implicit = defaultSharedJenkinsfilePath(organization);
         return Files.isRegularFile(implicit) ? implicit : null;
+    }
+
+    private Path defaultSharedJenkinsfilePath(OrganizationUnit organization) throws IOException {
+        RepositoryDefaults repositoryDefaults = organization.getRepositoryDefaults();
+        if (repositoryDefaults != null && repositoryDefaults.hasSharedPath()) {
+            return repositoryDefaults.getSharedPath().resolve(JENKINSFILE_NAME);
+        }
+
+        Path repositoryPath = organization.getPath().toAbsolutePath().normalize().getParent();
+        if (repositoryPath == null) {
+            throw new IOException("Could not determine topic repository root for organization: " + organization.getPath());
+        }
+        return repositoryPath.resolve(TopicRepositoryScanner.SHARED_DIR).resolve(JENKINSFILE_NAME);
     }
 
     private Path configuredJenkinsfile(Path basePath, String configured) throws IOException {

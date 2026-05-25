@@ -1,12 +1,8 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 public final class PipelineJobRenderer {
-    private static final String TEMPLATE_RESOURCE = "/ch/so/agi/jenkins/gretldatenportal/shared/Jenkinsfile";
     private static final String TIMEOUT_PLACEHOLDER = "@@TIMEOUT_MINUTES@@";
     private static final String GRADLE_TASK_PLACEHOLDER = "@@GRADLE_TASK@@";
     private static final String POST_BLOCK_PLACEHOLDER = "@@POST_BLOCK@@";
@@ -21,31 +17,12 @@ public final class PipelineJobRenderer {
         this.emailNotificationService = emailNotificationService;
     }
 
-    public String render(OrganizationUnit organization, NotificationConfiguration notificationConfiguration) {
-        return renderBundledDefault(organization, notificationConfiguration);
-    }
-
-    public String renderBundledDefault(
-            OrganizationUnit organization,
-            NotificationConfiguration notificationConfiguration) {
-        return renderTemplate(loadBundledTemplate(), organization, notificationConfiguration);
-    }
-
-    String loadBundledTemplate() {
-        try (InputStream inputStream = PipelineJobRenderer.class.getResourceAsStream(TEMPLATE_RESOURCE)) {
-            if (inputStream == null) {
-                throw new IOException("Bundled Jenkinsfile template resource not found: " + TEMPLATE_RESOURCE);
-            }
-            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            throw new UncheckedIOException("Could not load bundled Jenkinsfile template.", ex);
-        }
-    }
-
-    String renderTemplate(
+    // Only the repo-wide shared/Jenkinsfile is treated as a template.
+    public String renderTemplate(
             String template,
             OrganizationUnit organization,
             NotificationConfiguration notificationConfiguration) {
+        Objects.requireNonNull(template, "template");
         JobDefinition jobDefinition = organization.getJobDefinition();
         String postBlock = emailNotificationService.renderPostBlock(notificationConfiguration);
         if (postBlock.isBlank()) {

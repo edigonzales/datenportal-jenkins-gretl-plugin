@@ -231,7 +231,7 @@ Regeln:
 - `id` ist Pflicht und muss dem Organisationsordner entsprechen.
 - `execution.jobName` ist optional; Default ist `gretl-datenportal-${org}`.
 - `execution.gradleTask` ist optional; Default ist `publishToDatenportal`.
-- `execution.jenkinsfile` ist optional; der empfohlene gemeinsame Default liegt in `shared/Jenkinsfile`, und ein Organisations-`Jenkinsfile` darf ihn ueberschreiben.
+- `execution.jenkinsfile` ist optional; der kanonische gemeinsame Repo-Default liegt in `shared/Jenkinsfile`, und ein Organisations-`Jenkinsfile` darf ihn ueberschreiben.
 - `gui.fields` ist optional und wird per Feld-ID mit dem globalen Standard-GUI gemergt.
 
 ## 5. GUI-Modell
@@ -528,15 +528,50 @@ Die konkrete Syntax fuer `stashedFile` haengt von der Pipeline-Definition ab und
 
 Eine Organisation darf ein eigenes `Jenkinsfile` enthalten und damit den Default-Pipeline-Code vollstaendig ueberschreiben.
 
-Der empfohlene gemeinsame Repo-Default liegt unter `shared/Jenkinsfile`.
+Der kanonische gemeinsame Repo-Default liegt unter `shared/Jenkinsfile`.
+Dieses Repo-Template darf folgende Platzhalter enthalten:
+
+- `@@TIMEOUT_MINUTES@@`
+- `@@GRADLE_TASK@@`
+- `@@POST_BLOCK@@`
+
+### 7.1 Platzhalter-Semantik
+
+Syntax:
+
+- Ein Platzhalter ist ein exakter Plain-Text-Marker der Form `@@NAME@@`.
+- Es gibt keine eigentliche Template-Engine, keine Schleifen, keine Bedingungen und keine verschachtelten Templates.
+- Unbekannte Platzhalter bleiben unveraendert im resultierenden Jenkinsfile stehen.
+
+Ersetzungszeitpunkt:
+
+- Die Ersetzung passiert nur dann, wenn das Plugin den impliziten Repo-Default `shared/Jenkinsfile` verwendet.
+- Organisations-`Jenkinsfile` und explizite `execution.jenkinsfile`-Dateien werden literal geladen und nicht interpoliert.
+- Technisch liest der Resolver den Text aus `shared/Jenkinsfile` und uebergibt ihn an den Renderer, der die bekannten Marker per einfacher String-Ersetzung ersetzt.
+
+Bedeutung:
+
+- `@@TIMEOUT_MINUTES@@` wird aus dem gemergten `JobDefinition.timeoutMinutes` ersetzt.
+- `@@GRADLE_TASK@@` wird aus dem gemergten `JobDefinition.gradleTask` ersetzt.
+- `@@POST_BLOCK@@` wird aus der gemergten `NotificationConfiguration` via `EmailNotificationService` erzeugt.
+- Wenn Notifications deaktiviert sind, wird `@@POST_BLOCK@@` durch `post { always { echo 'GRETL Datenportal job finished.' } }` ersetzt.
+
+Beispiel:
+
+```text
+timeout(time: @@TIMEOUT_MINUTES@@, unit: 'MINUTES')
+sh "./gradlew @@GRADLE_TASK@@ ${gradleArgs.join(' ')}"
+@@POST_BLOCK@@
+```
 
 Reihenfolge:
 
 1. Wenn `execution.jenkinsfile` gesetzt ist, wird dieser Pfad verwendet.
 2. Sonst, wenn im Organisationsordner ein `Jenkinsfile` liegt, wird dieses verwendet.
 3. Sonst, wenn `shared/gretl-datenportal-defaults.yaml` ein `execution.jenkinsfile` setzt, wird dieser Pfad relativ zu `shared/` verwendet.
-4. Sonst, wenn `shared/Jenkinsfile` existiert, wird dieses verwendet.
-5. Sonst wird das gebuendelte Default-Jenkinsfile aus dem Plugin verwendet.
+4. Sonst wird `shared/Jenkinsfile` aus dem Themen-Repo verwendet und nur dort mit den gemergten Defaults interpoliert.
+
+Fehlt `shared/Jenkinsfile`, ist das ein Validierungsfehler, aber nur dann, wenn mindestens eine Organisation weder eigenes `Jenkinsfile` noch einen expliziten `execution.jenkinsfile`-Pfad verwendet.
 
 Auch ein Custom Jenkinsfile soll den dokumentierten Build-Parametervertrag respektieren.
 
@@ -948,7 +983,6 @@ Testfaelle:
 - Anzeige Titel + ID in Plugin-UI, technische ID als Build-Wert;
 - `stashedFile`-Parameter fuer `METADATA_FILE` und `DATA_FILE`;
 - `shared/Jenkinsfile` als gemeinsamer Default ohne Custom Jenkinsfile;
-- gebuendeltes Plugin-Default-Jenkinsfile als letzter Fallback;
 - Custom Jenkinsfile pro Organisation;
 - Notification Env Vars / Post-Block-Vertrag;
 - Build Description / Display Name.
@@ -1014,7 +1048,7 @@ Architekturentscheidungen:
 - dataset-gui.yaml kann pro Datensatz GUI-Felder ueberschreiben.
 - GUI-Kaskade: globales Standard-GUI, Organisations-Override, Datensatz-Override.
 - GUI-Merge erfolgt per Feld-ID.
-- `shared/Jenkinsfile` ist der bevorzugte gemeinsame Default fuer die Pipeline-Definition.
+- `shared/Jenkinsfile` ist der kanonische gemeinsame Default fuer die Pipeline-Definition.
 - Jeder generierte Job muss weiterhin per Custom Jenkinsfile ueberschreibbar sein.
 - Berechtigungen werden ueber AD-Gruppen modelliert.
 - Version 1 prueft READ/BUILD serverseitig im Plugin.
@@ -1123,7 +1157,7 @@ Minimaler Funktionsumfang Iteration 3:
 4. ORGANISATION als Build-Parameter mit fixem Wert erzeugen.
 5. METADATA_FILE und DATA_FILE als stashedFile-Parameter erzeugen.
 6. SERIES_ID fuer direkte Jenkins-Starts optional sichtbar machen.
-7. Zuerst `shared/Jenkinsfile` als Repo-Default verwenden und nur als letzten Fallback das gebuendelte Plugin-Default-Jenkinsfile laden.
+7. `shared/Jenkinsfile` als Repo-Default verwenden und fehlende Repo-Defaults frueh validieren.
 8. Custom Jenkinsfile pro Organisationseinheit respektieren.
 9. Pipeline Job so generieren, dass ./gradlew publishToDatenportal ausgefuehrt wird.
 10. Upload-Dateipfade und Originaldateinamen an Gradle uebergeben.

@@ -53,7 +53,10 @@ class PipelineScriptResolverTest {
     void usesConfiguredSharedJenkinsfile() throws IOException {
         Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
         Path script = Files.createDirectories(sharedDir.resolve("pipelines")).resolve("default.Jenkinsfile");
-        Files.writeString(script, "pipeline { /* shared explicit */ }", StandardCharsets.UTF_8);
+        Files.writeString(
+                script,
+                "pipeline { /* shared explicit @@TIMEOUT_MINUTES@@ @@GRADLE_TASK@@ @@POST_BLOCK@@ */ }",
+                StandardCharsets.UTF_8);
         Path orgDir = Files.createDirectories(tempDir.resolve("afu"));
 
         RepositoryDefaults defaults = new RepositoryDefaults(
@@ -66,35 +69,32 @@ class PipelineScriptResolverTest {
                 NotificationConfiguration.empty());
         OrganizationUnit organization = organization(orgDir, "", defaults);
 
-        assertEquals("pipeline { /* shared explicit */ }", new PipelineScriptResolver().resolve(organization));
+        assertEquals(
+                "pipeline { /* shared explicit @@TIMEOUT_MINUTES@@ @@GRADLE_TASK@@ @@POST_BLOCK@@ */ }",
+                new PipelineScriptResolver().resolve(organization));
     }
 
     @Test
     void usesImplicitSharedJenkinsfile() throws IOException {
         Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
-        Files.writeString(sharedDir.resolve("Jenkinsfile"), "pipeline { /* shared implicit */ }", StandardCharsets.UTF_8);
+        Files.writeString(sharedDir.resolve("Jenkinsfile"), sharedTemplate(), StandardCharsets.UTF_8);
         Path orgDir = Files.createDirectories(tempDir.resolve("afu"));
 
         OrganizationUnit organization = organization(orgDir, "", RepositoryDefaults.forSharedPath(sharedDir));
 
-        assertEquals("pipeline { /* shared implicit */ }", new PipelineScriptResolver().resolve(organization));
-    }
-
-    @Test
-    void fallsBackToBundledDefaultPipeline() throws IOException {
-        Path orgDir = Files.createDirectories(tempDir.resolve("afu"));
-
-        OrganizationUnit organization = organization(orgDir, "");
-        String script = new PipelineScriptResolver().resolve(organization);
-
         assertEquals(
-                new PipelineJobRenderer().renderBundledDefault(organization, organization.getNotificationConfiguration()),
-                script);
+                new PipelineJobRenderer().renderTemplate(
+                        sharedTemplate(),
+                        organization,
+                        organization.getNotificationConfiguration()),
+                new PipelineScriptResolver().resolve(organization));
     }
 
     @Test
-    void bundledDefaultPipelineKeepsOrganizationSpecificSettings() throws IOException {
+    void implicitSharedJenkinsfileKeepsOrganizationSpecificSettings() throws IOException {
         Path orgDir = Files.createDirectories(tempDir.resolve("afu"));
+        Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
+        Files.writeString(sharedDir.resolve("Jenkinsfile"), sharedTemplate(), StandardCharsets.UTF_8);
         NotificationConfiguration notifications = new NotificationConfiguration(
                 true,
                 NotificationConfiguration.Mode.APPEND,
@@ -112,7 +112,7 @@ class PipelineScriptResolverTest {
                 GuiDefinition.empty(),
                 notifications,
                 PermissionConfiguration.empty(),
-                RepositoryDefaults.empty(),
+                RepositoryDefaults.forSharedPath(sharedDir),
                 List.of(new DatasetEntry(
                         "ch.so.dataset",
                         orgDir.resolve("ch.so.dataset"),
@@ -126,6 +126,17 @@ class PipelineScriptResolverTest {
         assertTrue(script.contains("timeout(time: 45, unit: 'MINUTES')"));
         assertTrue(script.contains("./gradlew publishCustom"));
         assertTrue(script.contains("to: 'alerts@example.invalid'"));
+    }
+
+    @Test
+    void rejectsMissingSharedJenkinsfileWhenOrganizationNeedsRepoDefault() throws IOException {
+        Path orgDir = Files.createDirectories(tempDir.resolve("afu"));
+
+        OrganizationUnit organization = organization(orgDir, "", RepositoryDefaults.forSharedPath(tempDir.resolve("shared")));
+
+        IOException exception = assertThrows(IOException.class, () -> new PipelineScriptResolver().resolve(organization));
+
+        assertTrue(exception.getMessage().contains("shared/Jenkinsfile"));
     }
 
     @Test
@@ -183,5 +194,24 @@ class PipelineScriptResolverTest {
                         true,
                         false,
                         GuiDefinition.empty())));
+    }
+
+    private String sharedTemplate() {
+        return """
+                pipeline {
+                    agent any
+                    options {
+                        timeout(time: @@TIMEOUT_MINUTES@@, unit: 'MINUTES')
+                    }
+                    stages {
+                        stage('Run') {
+                            steps {
+                                sh "./gradlew @@GRADLE_TASK@@"
+                            }
+                        }
+                    }
+                @@POST_BLOCK@@
+                }
+                """;
     }
 }
