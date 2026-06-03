@@ -11,31 +11,58 @@ import hudson.tasks.Builder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import org.jenkinsci.Symbol;
 import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildStep {
     private final String topicRepositoryPath;
+    private final String topicRepositoryUrl;
+    private final String topicRepositoryBranch;
+    private transient TopicRepositoryManager topicRepositoryManager;
 
     @DataBoundConstructor
-    public GretlDatenportalSeedBuilder(String topicRepositoryPath) {
+    public GretlDatenportalSeedBuilder(
+            String topicRepositoryPath,
+            String topicRepositoryUrl,
+            String topicRepositoryBranch) {
+        this(topicRepositoryPath, topicRepositoryUrl, topicRepositoryBranch, new TopicRepositoryManager());
+    }
+
+    GretlDatenportalSeedBuilder(
+            String topicRepositoryPath,
+            String topicRepositoryUrl,
+            String topicRepositoryBranch,
+            TopicRepositoryManager topicRepositoryManager) {
         this.topicRepositoryPath = topicRepositoryPath == null ? "" : topicRepositoryPath;
+        this.topicRepositoryUrl = topicRepositoryUrl == null ? "" : topicRepositoryUrl;
+        this.topicRepositoryBranch = topicRepositoryBranch == null ? "" : topicRepositoryBranch;
+        this.topicRepositoryManager = Objects.requireNonNull(topicRepositoryManager, "topicRepositoryManager");
     }
 
     public String getTopicRepositoryPath() {
         return topicRepositoryPath;
     }
 
+    public String getTopicRepositoryUrl() {
+        return topicRepositoryUrl;
+    }
+
+    public String getTopicRepositoryBranch() {
+        return topicRepositoryBranch;
+    }
+
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
-        if (topicRepositoryPath.isBlank()) {
+        Path repositoryPath = resolveRepositoryPath(listener);
+        if (repositoryPath == null) {
             listener.error("Themen-Repo-Pfad ist nicht konfiguriert.");
             throw new IOException("Themen-Repo-Pfad ist nicht konfiguriert.");
         }
 
-        ScanResult scanResult = new TopicRepositoryScanner().scan(Path.of(topicRepositoryPath));
+        ScanResult scanResult = new TopicRepositoryScanner().scan(repositoryPath);
         for (ValidationMessage message : scanResult.getMessages()) {
             listener.getLogger().printf("%s: %s%s%n",
                     message.getSeverity(),
@@ -49,6 +76,22 @@ public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildS
 
         List<String> generated = new GretlDatenportalJobGenerator().generate(scanResult);
         listener.getLogger().println("Generated GRETL Datenportal jobs: " + generated);
+    }
+
+    private Path resolveRepositoryPath(TaskListener listener) throws IOException, InterruptedException {
+        ConfiguredTopicRepository repository = ConfiguredTopicRepository.resolve(
+                topicRepositoryPath,
+                topicRepositoryUrl,
+                topicRepositoryBranch,
+                GretlDatenportalGlobalConfiguration.get());
+        return topicRepositoryManager().resolveRepositoryPath(repository, true, listener.getLogger()::println);
+    }
+
+    private TopicRepositoryManager topicRepositoryManager() {
+        if (topicRepositoryManager == null) {
+            topicRepositoryManager = new TopicRepositoryManager();
+        }
+        return topicRepositoryManager;
     }
 
     @Extension

@@ -39,18 +39,21 @@ public class GretlDatenportalRootAction implements RootAction {
     private final TopicRepositoryScanner scanner;
     private final DatenportalJobResolver jobResolver;
     private final StartFormValidator startFormValidator;
+    private final TopicRepositoryManager topicRepositoryManager;
 
     public GretlDatenportalRootAction() {
-        this(new TopicRepositoryScanner(), new DatenportalJobResolver(), new StartFormValidator());
+        this(new TopicRepositoryScanner(), new DatenportalJobResolver(), new StartFormValidator(), new TopicRepositoryManager());
     }
 
     GretlDatenportalRootAction(
             TopicRepositoryScanner scanner,
             DatenportalJobResolver jobResolver,
-            StartFormValidator startFormValidator) {
+            StartFormValidator startFormValidator,
+            TopicRepositoryManager topicRepositoryManager) {
         this.scanner = scanner;
         this.jobResolver = jobResolver;
         this.startFormValidator = startFormValidator;
+        this.topicRepositoryManager = topicRepositoryManager;
     }
 
     @Override
@@ -71,13 +74,23 @@ public class GretlDatenportalRootAction implements RootAction {
     public ScanResult getScanResult() {
         Jenkins.get().checkPermission(Jenkins.READ);
 
-        Path repositoryPath = getConfiguration().getTopicRepositoryPathAsPath();
+        Path repositoryPath;
+        try {
+            repositoryPath = topicRepositoryManager.resolveRepositoryPath(getConfiguration(), false);
+        } catch (Exception ex) {
+            return ScanResult.empty(
+                    null,
+                    new ValidationMessage(
+                            ValidationMessage.Severity.ERROR,
+                            "Could not prepare topic repository: " + ex.getMessage(),
+                            null));
+        }
         if (repositoryPath == null) {
             return ScanResult.empty(
                     null,
                     new ValidationMessage(
                             ValidationMessage.Severity.WARNING,
-                            "Topic repository path is not configured.",
+                            "Topic repository is not configured.",
                             null));
         }
         return scanner.scan(repositoryPath);

@@ -7,6 +7,12 @@
         <f:entry title="URL Name" field="urlName">
             <f:textbox />
         </f:entry>
+        <f:entry title="Themen-Repo URL" field="topicRepositoryUrl">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Themen-Repo Branch" field="topicRepositoryBranch">
+            <f:textbox />
+        </f:entry>
         <f:entry title="Themen-Repo Pfad" field="topicRepositoryPath">
             <f:textbox />
         </f:entry>

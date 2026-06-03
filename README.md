@@ -8,8 +8,8 @@ specification:
 
 - Maven HPI plugin skeleton.
 - RootAction at `/gretl-datenportal`.
-- Global configuration for display name, URL name, and local topic repository
-  path.
+- Global configuration for display name, URL name, Git topic repository
+  URL/branch, and a legacy local topic repository path fallback.
 - Topic repository scanner for organizations, dataset folders, and mandatory
   `dataset.json` files.
 - YAML parsing for `gretl-datenportal-job.yaml` and `dataset-gui.yaml`.
@@ -89,9 +89,10 @@ exist.
 ## Local Jenkins Dev Setup
 
 The companion local setup in
-`/Users/stefan/sources/p-agi_datenportal/jenkins-dev` contains an installer
-script and a v5-compatible demo topic repository. Build the HPI first, install
-it into `jenkins-dev`, verify the installed JPI, then start Jenkins:
+`/Users/stefan/sources/datenportal-jenkins-dev` contains an installer
+script and uses the standalone topic repository
+`/Users/stefan/sources/datenportal-themenrepo`. Build the HPI first, install
+it into `datenportal-jenkins-dev`, verify the installed JPI, then start Jenkins:
 
 ```bash
 cd /Users/stefan/sources/jenkins-gretl-datenportal-plugin
@@ -99,12 +100,12 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk use java 21.0.10-tem
 mvn -ntp package
 
-cd /Users/stefan/sources/p-agi_datenportal/jenkins-dev
+cd /Users/stefan/sources/datenportal-jenkins-dev
 ./bin/install-gretl-datenportal-plugin.sh
 
 stat -f '%Sm %N' -t '%Y-%m-%d %H:%M:%S' \
   /Users/stefan/sources/jenkins-gretl-datenportal-plugin/target/jenkins-gretl-datenportal-plugin.hpi \
-  /Users/stefan/sources/p-agi_datenportal/jenkins-dev/jenkins-home/plugins/jenkins-gretl-datenportal-plugin.jpi
+  /Users/stefan/sources/datenportal-jenkins-dev/jenkins-home/plugins/jenkins-gretl-datenportal-plugin.jpi
 
 ./bin/start.sh
 ```
@@ -113,6 +114,16 @@ If Jenkins is already running on `localhost:8080`, fully restart it after the
 installer finishes. Overwriting the `.jpi` alone does not reload already loaded
 classes or Jelly views.
 
+The local JCasC setup configures the plugin with:
+
+```text
+topicRepositoryUrl=file:///Users/stefan/sources/datenportal-themenrepo
+topicRepositoryBranch=main
+```
+
+`topicRepositoryPath` remains available as a legacy fallback when no Git URL is
+configured.
+
 Then open:
 
 ```text
@@ -120,7 +131,7 @@ http://localhost:8080/gretl-datenportal
 ```
 
 For the full local workflow, including the seed job and demo uploads, see
-`/Users/stefan/sources/p-agi_datenportal/jenkins-dev/README.md`.
+`/Users/stefan/sources/datenportal-jenkins-dev/README.md`.
 
 The full working specification and Codex prompt live in
 [`spec/gretl_datenportal_jobs_plugin_spec_and_codex_prompt_v5.md`](spec/gretl_datenportal_jobs_plugin_spec_and_codex_prompt_v5.md).

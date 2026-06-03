@@ -13,6 +13,8 @@ import org.kohsuke.stapler.QueryParameter;
 public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     private String displayName = "GRETL Datenportal Jobs";
     private String urlName = "gretl-datenportal";
+    private String topicRepositoryUrl = "";
+    private String topicRepositoryBranch = "main";
     private String topicRepositoryPath = "";
 
     public GretlDatenportalGlobalConfiguration() {
@@ -48,6 +50,26 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
         return topicRepositoryPath == null ? "" : topicRepositoryPath;
     }
 
+    public String getTopicRepositoryUrl() {
+        return topicRepositoryUrl == null ? "" : topicRepositoryUrl;
+    }
+
+    @DataBoundSetter
+    public void setTopicRepositoryUrl(String topicRepositoryUrl) {
+        this.topicRepositoryUrl = topicRepositoryUrl;
+        save();
+    }
+
+    public String getTopicRepositoryBranch() {
+        return topicRepositoryBranch == null || topicRepositoryBranch.isBlank() ? "main" : topicRepositoryBranch;
+    }
+
+    @DataBoundSetter
+    public void setTopicRepositoryBranch(String topicRepositoryBranch) {
+        this.topicRepositoryBranch = topicRepositoryBranch;
+        save();
+    }
+
     public Path getTopicRepositoryPathAsPath() {
         String configuredPath = getTopicRepositoryPath();
         if (configuredPath.isBlank()) {
@@ -75,6 +97,26 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
         }
         if (!value.matches("^[a-z0-9][a-z0-9-]*$")) {
             return FormValidation.error("Use lower-case letters, digits, and hyphens.");
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckTopicRepositoryUrl(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        if (!value.contains("://")) {
+            return FormValidation.warning("A Git URL such as file://... or https://... is recommended.");
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckTopicRepositoryBranch(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        if (value.contains(" ")) {
+            return FormValidation.error("Git branch names must not contain spaces.");
         }
         return FormValidation.ok();
     }
