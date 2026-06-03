@@ -75,7 +75,12 @@ public final class TopicRepositoryScanner {
                     .filter(path -> !isHidden(path))
                     .filter(path -> !SHARED_DIR.equals(path.getFileName().toString()))
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    .forEach(path -> organizations.add(scanOrganization(path, repositoryDefaults, messages)));
+                    .forEach(path -> {
+                        OrganizationUnit organization = scanOrganization(path, repositoryDefaults, messages);
+                        if (organization != null) {
+                            organizations.add(organization);
+                        }
+                    });
         } catch (IOException ex) {
             messages.add(new ValidationMessage(
                     ValidationMessage.Severity.ERROR,
@@ -121,39 +126,49 @@ public final class TopicRepositoryScanner {
                     ValidationMessage.Severity.ERROR,
                     "Organization folder name is invalid: " + orgId,
                     orgDir));
+            return null;
         }
 
         Path organizationJobFile = orgDir.resolve(ORGANIZATION_JOB_FILE);
         boolean jobDefinitionPresent = Files.isRegularFile(organizationJobFile);
-        JobDefinition jobDefinition = JobDefinition.defaultFor(orgId);
-        GuiDefinition organizationGui = GuiDefinition.empty();
-        NotificationConfiguration notificationConfiguration = NotificationConfiguration.empty();
-        PermissionConfiguration permissionConfiguration = PermissionConfiguration.empty();
         if (!jobDefinitionPresent) {
             messages.add(new ValidationMessage(
-                    ValidationMessage.Severity.WARNING,
-                    "Organization is missing " + ORGANIZATION_JOB_FILE + ".",
+                    ValidationMessage.Severity.ERROR,
+                    "Organization is missing " + ORGANIZATION_JOB_FILE + " and will be ignored.",
                     orgDir));
-        } else {
-            try {
-                OrganizationJobConfiguration configuration = jobDefinitionParser.parse(organizationJobFile, orgId);
-                jobDefinition = configuration.getJobDefinition();
-                organizationGui = configuration.getGuiDefinition();
-                notificationConfiguration = configuration.getNotificationConfiguration();
-                permissionConfiguration = configuration.getPermissionConfiguration();
-                if (!orgId.equals(jobDefinition.getId())) {
-                    messages.add(new ValidationMessage(
-                            ValidationMessage.Severity.ERROR,
-                            ORGANIZATION_JOB_FILE + " id must match organization folder name.",
-                            organizationJobFile));
-                }
-            } catch (Exception ex) {
-                messages.add(new ValidationMessage(
-                        ValidationMessage.Severity.ERROR,
-                        "Could not parse " + ORGANIZATION_JOB_FILE + ": " + ex.getMessage(),
-                        organizationJobFile));
-            }
+            return null;
         }
+
+        OrganizationJobConfiguration configuration;
+        try {
+            configuration = jobDefinitionParser.parse(organizationJobFile, orgId);
+        } catch (Exception ex) {
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Could not parse " + ORGANIZATION_JOB_FILE + ": " + ex.getMessage(),
+                    organizationJobFile));
+            return null;
+        }
+
+        JobDefinition jobDefinition = configuration.getJobDefinition();
+        GuiDefinition organizationGui = configuration.getGuiDefinition();
+        NotificationConfiguration notificationConfiguration = configuration.getNotificationConfiguration();
+        PermissionConfiguration permissionConfiguration = configuration.getPermissionConfiguration();
+
+        List<ValidationMessage> organizationMessages = new ArrayList<>();
+        if (!orgId.equals(jobDefinition.getId())) {
+            organizationMessages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    ORGANIZATION_JOB_FILE + " id must match organization folder name.",
+                    organizationJobFile));
+        }
+        organizationMessages.addAll(jobDefinitionValidator.validatePermissions(permissionConfiguration, organizationJobFile));
+        organizationMessages.addAll(jobDefinitionValidator.validateGui(organizationGui));
+        messages.addAll(organizationMessages);
+        if (organizationMessages.stream().anyMatch(message -> message.getSeverity() == ValidationMessage.Severity.ERROR)) {
+            return null;
+        }
+
         jobDefinition = mergeJobDefinition(orgId, jobDefinition, repositoryDefaults);
         notificationConfiguration = repositoryDefaults.getNotificationConfiguration().merge(notificationConfiguration);
 
@@ -188,7 +203,6 @@ public final class TopicRepositoryScanner {
                 repositoryDefaults,
                 datasets);
         messages.addAll(jobDefinitionValidator.validateOrganization(organization));
-        messages.addAll(jobDefinitionValidator.validateGui(organizationGui));
         return organization;
     }
 

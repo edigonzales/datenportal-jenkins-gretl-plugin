@@ -163,6 +163,11 @@ class TopicRepositoryScannerTest {
                 "afu",
                 """
                 id: afu
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_AFU
                 execution:
                   gradleTask: publishAfu
                   timeoutMinutes: 45
@@ -197,10 +202,72 @@ class TopicRepositoryScannerTest {
 
         ScanResult result = scanner.scan(tempDir);
 
-        assertFalse(result.hasErrors());
+        assertTrue(result.hasErrors());
         assertTrue(result.getMessages().stream()
                 .anyMatch(message -> message.getMessage().contains("missing gretl-datenportal-job.yaml")));
-        assertFalse(result.getOrganizations().get(0).isJobDefinitionPresent());
+        assertTrue(result.getOrganizations().isEmpty());
+    }
+
+    @Test
+    void ignoresOrganizationWhenPermissionsBlockIsMissing() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization(
+                "afu",
+                """
+                id: afu
+                """);
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getOrganizations().isEmpty());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one group.")));
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one group.")));
+    }
+
+    @Test
+    void ignoresOrganizationWhenReadPermissionsAreMissing() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization(
+                "afu",
+                """
+                id: afu
+                permissions:
+                  build:
+                    - GA_Gretl_Datenportal_AFU
+                """);
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getOrganizations().isEmpty());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one group.")));
+    }
+
+    @Test
+    void ignoresOrganizationWhenBuildPermissionsAreMissing() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization(
+                "afu",
+                """
+                id: afu
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                """);
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getOrganizations().isEmpty());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one group.")));
     }
 
     @Test
@@ -228,7 +295,16 @@ class TopicRepositoryScannerTest {
     }
 
     private void writeOrganization(String id) throws IOException {
-        writeOrganization(id, "id: " + id + "\n");
+        writeOrganization(
+                id,
+                """
+                id: %s
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_%s
+                """.formatted(id, id.toUpperCase()));
     }
 
     private void writeOrganization(String id, String yaml) throws IOException {

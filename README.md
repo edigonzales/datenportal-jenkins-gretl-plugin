@@ -10,8 +10,9 @@ specification:
 - RootAction at `/gretl-datenportal`.
 - Global configuration for display name, URL name, Git topic repository
   URL/branch, and a legacy local topic repository path fallback.
-- Topic repository scanner for organizations, dataset folders, and mandatory
-  `dataset.json` files.
+- Topic repository scanner for organizations with mandatory
+  `gretl-datenportal-job.yaml`, dataset folders, and mandatory `dataset.json`
+  files.
 - YAML parsing for `gretl-datenportal-job.yaml` and `dataset-gui.yaml`.
 - Default GUI model, GUI merge, and server-side start-form validation.
 - Seed builder and Pipeline job generator for generated workflow jobs.
@@ -85,6 +86,62 @@ Groovy.
 If an organization has no own Pipeline override and no explicit
 `execution.jenkinsfile` path resolves first, then `shared/Jenkinsfile` must
 exist.
+
+## Organization Config Schema
+
+Each organization folder must contain a valid `gretl-datenportal-job.yaml`.
+If the file is missing, cannot be parsed, or fails validation, that
+organization is ignored during scan and seed runs and an error is reported.
+
+Minimum expected shape:
+
+```yaml
+id: afu
+permissions:
+  read:
+    - GA_Gretl_Datenportal_Read
+  build:
+    - GA_Gretl_Datenportal_AFU
+```
+
+Relevant keys:
+
+- Required: `id`, `permissions.read`, `permissions.build`
+- Common metadata: `title`, `description`
+- Optional sections: `execution`, `notifications`, `gui`
+
+Rules:
+
+- `id` must match the organization folder name.
+- `permissions.read` must contain at least one group.
+- `permissions.build` must contain at least one group.
+- Missing or empty permissions are treated as invalid configuration.
+- Jenkins administrators keep their existing bypass for read and build access.
+
+## Dataset GUI Override Scope
+
+`dataset-gui.yaml` is limited to `gui.fields` overrides. It can adjust GUI
+behavior such as:
+
+- `label`
+- `description`
+- `type`
+- `required`
+- `defaultValue`
+- `values`
+- `source`
+- `visibleIf`
+- `requiredIf`
+- `uploadMode`
+- `allowedExtensions`
+- `maxSizeMb`
+
+It does not control:
+
+- permissions
+- execution or Jenkinsfile selection
+- notifications
+- dataset metadata from `dataset.json`
 
 ## Local Jenkins Dev Setup
 

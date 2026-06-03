@@ -22,6 +22,17 @@ public final class JobDefinitionValidator {
         return messages;
     }
 
+    public List<ValidationMessage> validatePermissions(PermissionConfiguration permissionConfiguration, Path path) {
+        List<ValidationMessage> messages = new ArrayList<>();
+        if (permissionConfiguration == null || !permissionConfiguration.hasReadRestrictions()) {
+            messages.add(error("permissions.read must contain at least one group.", path));
+        }
+        if (permissionConfiguration == null || !permissionConfiguration.hasBuildRestrictions()) {
+            messages.add(error("permissions.build must contain at least one group.", path));
+        }
+        return messages;
+    }
+
     public List<ValidationMessage> validateGui(GuiDefinition guiDefinition) {
         List<ValidationMessage> messages = new ArrayList<>();
         for (GuiFieldDefinition field : guiDefinition.getFields()) {

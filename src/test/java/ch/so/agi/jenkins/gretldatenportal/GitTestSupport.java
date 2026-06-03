@@ -32,7 +32,12 @@ final class GitTestSupport {
                 id: %s
                 title: %s Datenportal publizieren
                 description: Lokaler Test fuer %s.
-                """.formatted(organizationId, organizationId.toUpperCase(), organizationId),
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_%s
+                """.formatted(organizationId, organizationId.toUpperCase(), organizationId, organizationId.toUpperCase()),
                 StandardCharsets.UTF_8);
 
         Path datasetPath = Files.createDirectories(organizationPath.resolve(datasetId));
