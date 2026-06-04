@@ -23,8 +23,7 @@ specification:
 - Default Pipeline script renderer with `stashedFile` uploads and email-ext
   post-block support for the repo-wide shared template.
 - Basic start and run-detail Jelly views.
-- Legacy `gui` blocks and `dataset-gui.yaml` are rejected as unsupported
-  configuration.
+- Legacy repository-driven GUI configuration is rejected as unsupported.
 - Unit tests for scanner, start validation, permissions, custom
   Pipeline resolution, and Pipeline rendering.
 
@@ -116,7 +115,8 @@ Rules:
 - `permissions.read` must contain at least one group.
 - `permissions.build` must contain at least one group.
 - Missing or empty permissions are treated as invalid configuration.
-- `gui` is no longer supported and causes a scan error.
+- Repository-driven GUI configuration is no longer supported and causes a scan
+  error.
 - Jenkins administrators keep their existing bypass for read and build access.
 
 ## Fixed Start Form Model
@@ -131,11 +131,11 @@ Supported fields are:
 - `COMMENT`
 - `SERIES_ID` only when `dataset.json` sets `"series": true`
 
-The plugin rejects these legacy configuration forms:
+The plugin rejects legacy repository-driven GUI configuration. In practice this
+means:
 
 - `gui` blocks in organization YAML
 - `gui` blocks in `shared/gretl-datenportal-defaults.yaml`
-- `dataset-gui.yaml`
 
 The generated Jenkins jobs no longer expose:
 
