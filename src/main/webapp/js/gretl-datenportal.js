@@ -26,24 +26,6 @@
         return null;
     }
 
-    function getNamedControl(form, name) {
-        return form.elements ? form.elements[name] : null;
-    }
-
-    function rawControlValue(form, name) {
-        var control = getNamedControl(form, name);
-        if (!control) {
-            return "";
-        }
-        if (control.length && !control.tagName) {
-            control = control[0];
-        }
-        if (control.type === "checkbox") {
-            return control.checked ? control.value : "";
-        }
-        return control.value || "";
-    }
-
     function escapeHtml(value) {
         return String(value == null ? "" : value)
                 .replace(/&/g, "&amp;")
@@ -62,40 +44,6 @@
             return;
         }
         element.removeAttribute("hidden");
-    }
-
-    function setFieldEnabled(field, enabled) {
-        all(field, "input, select, textarea, button").forEach(function (control) {
-            control.disabled = !enabled;
-        });
-    }
-
-    function updateConditionalFields(form) {
-        all(form, "[data-gdp-field]").forEach(function (field) {
-            var visibleParam = field.getAttribute("data-gdp-visible-param");
-            var visibleEquals = field.getAttribute("data-gdp-visible-equals");
-            var requiredParam = field.getAttribute("data-gdp-required-param");
-            var requiredEquals = field.getAttribute("data-gdp-required-equals");
-            var baseRequired = field.getAttribute("data-gdp-required-base") === "true";
-            var visible = true;
-            var required = baseRequired;
-
-            if (visibleParam && visibleEquals) {
-                visible = rawControlValue(form, visibleParam) === visibleEquals;
-            }
-            if (requiredParam && requiredEquals) {
-                required = required || rawControlValue(form, requiredParam) === requiredEquals;
-            }
-
-            field.hidden = !visible;
-            field.classList.toggle("gdp-field--hidden", !visible);
-            field.classList.toggle("gdp-field--required", required);
-            setFieldEnabled(field, visible);
-
-            all(field, "input, select, textarea").forEach(function (control) {
-                control.required = visible && required;
-            });
-        });
     }
 
     function initStartForms() {
@@ -122,20 +70,13 @@
                     }
                 });
             });
-
-            form.addEventListener("change", function () {
-                updateConditionalFields(form);
-            });
             form.addEventListener("reset", function () {
                 window.setTimeout(function () {
                     all(form, "[data-gdp-file-name]").forEach(function (target) {
                         target.textContent = "Keine Datei ausgewählt.";
                     });
-                    updateConditionalFields(form);
                 }, 0);
             });
-
-            updateConditionalFields(form);
         });
     }
 

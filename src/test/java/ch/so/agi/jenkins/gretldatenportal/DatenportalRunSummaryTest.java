@@ -12,12 +12,10 @@ class DatenportalRunSummaryTest {
     void extractsStringParametersForRunSummary() {
         ParametersAction parameters = new ParametersAction(List.of(
                 new StringParameterValue("ORGANISATION", "afu"),
-                new StringParameterValue("DATASET", "ch.so.dataset"),
-                new StringParameterValue("ENVIRONMENT", "production")));
+                new StringParameterValue("DATASET", "ch.so.dataset")));
 
         assertEquals("afu", DatenportalRunSummary.parameterValue(parameters, "ORGANISATION"));
         assertEquals("ch.so.dataset", DatenportalRunSummary.parameterValue(parameters, "DATASET"));
-        assertEquals("production", DatenportalRunSummary.parameterValue(parameters, "ENVIRONMENT"));
     }
 
     @Test

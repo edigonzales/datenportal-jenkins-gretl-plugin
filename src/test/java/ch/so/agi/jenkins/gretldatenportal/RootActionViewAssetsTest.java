@@ -52,12 +52,12 @@ class RootActionViewAssetsTest {
     }
 
     @Test
-    void javascriptEnhancesUploadsConditionsAndListFiltering() throws IOException {
+    void javascriptEnhancesUploadsAndListFiltering() throws IOException {
         String script = Files.readString(Path.of("src/main/webapp/js/gretl-datenportal.js"), StandardCharsets.UTF_8);
 
         assertTrue(script.contains("data-gdp-file-input"));
-        assertTrue(script.contains("data-gdp-visible-param"));
-        assertTrue(script.contains("data-gdp-required-param"));
+        assertFalse(script.contains("data-gdp-visible-param"));
+        assertFalse(script.contains("data-gdp-required-param"));
         assertTrue(script.contains("data-gdp-filter-item"));
         assertTrue(script.contains("data-gdp-run-status-view"));
         assertTrue(script.contains("window.fetch"));

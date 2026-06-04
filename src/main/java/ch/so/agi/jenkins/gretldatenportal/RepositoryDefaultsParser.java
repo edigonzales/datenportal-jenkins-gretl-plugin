@@ -5,18 +5,10 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public final class RepositoryDefaultsParser {
-    private final GuiDefinitionParser guiDefinitionParser;
-
-    public RepositoryDefaultsParser() {
-        this(new GuiDefinitionParser());
-    }
-
-    public RepositoryDefaultsParser(GuiDefinitionParser guiDefinitionParser) {
-        this.guiDefinitionParser = guiDefinitionParser;
-    }
 
     public RepositoryDefaults parse(Path yamlFile, Path sharedPath) throws IOException {
         Map<String, Object> root = YamlSupport.loadMap(yamlFile);
+        rejectGuiConfiguration(root);
         Map<String, Object> execution = YamlSupport.asMap(root.get("execution"));
         return new RepositoryDefaults(
                 sharedPath,
@@ -24,7 +16,13 @@ public final class RepositoryDefaultsParser {
                 YamlSupport.stringValue(execution, "gradleTask"),
                 YamlSupport.integerValue(execution, "timeoutMinutes"),
                 YamlSupport.stringValue(execution, "jenkinsfile"),
-                guiDefinitionParser.parse(root),
+                GuiDefinition.empty(),
                 NotificationConfiguration.fromYaml(YamlSupport.asMap(root.get("notifications"))));
+    }
+
+    private void rejectGuiConfiguration(Map<String, Object> root) throws IOException {
+        if (!YamlSupport.asMap(root.get("gui")).isEmpty()) {
+            throw new IOException("gretl-datenportal-defaults.yaml contains unsupported gui configuration.");
+        }
     }
 }

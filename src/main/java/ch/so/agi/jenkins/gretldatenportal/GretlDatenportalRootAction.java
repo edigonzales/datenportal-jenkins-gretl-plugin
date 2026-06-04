@@ -1,7 +1,6 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
 import hudson.Extension;
-import hudson.model.BooleanParameterValue;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
 import hudson.model.Item;
@@ -419,9 +418,7 @@ public class GretlDatenportalRootAction implements RootAction {
 
     private StartFormSubmission createSubmission(StaplerRequest2 req) throws IOException, ServletException {
         Map<String, String> values = new HashMap<>();
-        for (String key : List.of(
-                "ORGANISATION", "DATASET", "ENVIRONMENT", "DRY_RUN", "COMMENT",
-                "CONFIRM_PRODUCTION", "SERIES_ID")) {
+        for (String key : List.of("ORGANISATION", "DATASET", "COMMENT", "SERIES_ID")) {
             values.put(key, req.getParameter(key) == null ? "" : req.getParameter(key));
         }
         Map<String, UploadedFileInfo> files = new HashMap<>();
@@ -442,12 +439,7 @@ public class GretlDatenportalRootAction implements RootAction {
         List<ParameterValue> values = new ArrayList<>();
         values.add(new StringParameterValue("ORGANISATION", req.getParameter("ORGANISATION")));
         values.add(new StringParameterValue("DATASET", req.getParameter("DATASET")));
-        values.add(new StringParameterValue("ENVIRONMENT", req.getParameter("ENVIRONMENT")));
-        values.add(new BooleanParameterValue("DRY_RUN", "true".equalsIgnoreCase(req.getParameter("DRY_RUN"))));
         values.add(new TextParameterValue("COMMENT", req.getParameter("COMMENT") == null ? "" : req.getParameter("COMMENT")));
-        values.add(new BooleanParameterValue(
-                "CONFIRM_PRODUCTION",
-                "true".equalsIgnoreCase(req.getParameter("CONFIRM_PRODUCTION"))));
         values.add(new StringParameterValue("SERIES_ID", req.getParameter("SERIES_ID") == null ? "" : req.getParameter("SERIES_ID")));
         addFileParameter(values, req, "METADATA_FILE");
         addFileParameter(values, req, "DATA_FILE");

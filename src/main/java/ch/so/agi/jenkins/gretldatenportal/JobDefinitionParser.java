@@ -5,18 +5,10 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public final class JobDefinitionParser {
-    private final GuiDefinitionParser guiDefinitionParser;
-
-    public JobDefinitionParser() {
-        this(new GuiDefinitionParser());
-    }
-
-    public JobDefinitionParser(GuiDefinitionParser guiDefinitionParser) {
-        this.guiDefinitionParser = guiDefinitionParser;
-    }
 
     public OrganizationJobConfiguration parse(Path yamlFile, String fallbackId) throws IOException {
         Map<String, Object> root = YamlSupport.loadMap(yamlFile);
+        rejectGuiConfiguration(root, "gretl-datenportal-job.yaml");
         Map<String, Object> execution = YamlSupport.asMap(root.get("execution"));
         Integer configuredTimeout = YamlSupport.integerValue(execution, "timeoutMinutes");
         int timeout = valueOrDefault(configuredTimeout, 60);
@@ -46,7 +38,7 @@ public final class JobDefinitionParser {
 
         return new OrganizationJobConfiguration(
                 jobDefinition,
-                guiDefinitionParser.parse(root),
+                GuiDefinition.empty(),
                 notificationConfiguration,
                 permissionConfiguration);
     }
@@ -58,5 +50,11 @@ public final class JobDefinitionParser {
     private boolean hasNonBlankValue(Map<String, Object> map, String key) {
         Object value = map.get(key);
         return value != null && !value.toString().isBlank();
+    }
+
+    private void rejectGuiConfiguration(Map<String, Object> root, String sourceName) throws IOException {
+        if (!YamlSupport.asMap(root.get("gui")).isEmpty()) {
+            throw new IOException(sourceName + " contains unsupported gui configuration.");
+        }
     }
 }

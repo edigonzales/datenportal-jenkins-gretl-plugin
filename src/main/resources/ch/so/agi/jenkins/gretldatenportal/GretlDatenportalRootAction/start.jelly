@@ -84,16 +84,10 @@
 
                                 <j:forEach var="field" items="${it.selectedGuiFields}">
                                     <j:if test="${field.id != 'ORGANISATION' and field.id != 'DATASET'}">
-                                        <div class="gdp-field"
-                                             data-gdp-field="${field.id}"
-                                             data-gdp-required-base="${field.required}"
-                                             data-gdp-visible-param="${field.visibleIf.parameter}"
-                                             data-gdp-visible-equals="${field.visibleIf.equals}"
-                                             data-gdp-required-param="${field.requiredIf.parameter}"
-                                             data-gdp-required-equals="${field.requiredIf.equals}">
+                                        <div class="gdp-field">
                                             <label class="gdp-label" for="${field.id}">
                                                 ${field.label}
-                                                <j:if test="${field.required or field.requiredIf != null}">
+                                                <j:if test="${field.required}">
                                                     <span aria-hidden="true">*</span>
                                                 </j:if>
                                             </label>
@@ -112,19 +106,6 @@
                                                             </j:choose>
                                                         </j:forEach>
                                                     </select>
-                                                </j:when>
-                                                <j:when test="${field.type.id == 'boolean'}">
-                                                    <label class="gdp-checkbox">
-                                                        <j:choose>
-                                                            <j:when test="${field.id != 'CONFIRM_PRODUCTION' and field.defaultValue == 'true'}">
-                                                                <input id="${field.id}" name="${field.id}" type="checkbox" value="true" checked="checked" />
-                                                            </j:when>
-                                                            <j:otherwise>
-                                                                <input id="${field.id}" name="${field.id}" type="checkbox" value="true" />
-                                                            </j:otherwise>
-                                                        </j:choose>
-                                                        <span>Aktiviert</span>
-                                                    </label>
                                                 </j:when>
                                                 <j:when test="${field.type.id == 'text'}">
                                                     <textarea id="${field.id}" name="${field.id}" class="gdp-control gdp-textarea">${field.defaultValue}</textarea>

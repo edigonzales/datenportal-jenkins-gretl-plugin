@@ -21,7 +21,6 @@ public final class TopicRepositoryScanner {
     private static final Pattern REPOSITORY_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]*$");
 
     private final DatasetDefinitionParser datasetDefinitionParser;
-    private final DatasetGuiParser datasetGuiParser;
     private final JobDefinitionParser jobDefinitionParser;
     private final RepositoryDefaultsParser repositoryDefaultsParser;
     private final JobDefinitionValidator jobDefinitionValidator;
@@ -29,7 +28,6 @@ public final class TopicRepositoryScanner {
     public TopicRepositoryScanner() {
         this(
                 new DatasetDefinitionParser(),
-                new DatasetGuiParser(),
                 new JobDefinitionParser(),
                 new RepositoryDefaultsParser(),
                 new JobDefinitionValidator());
@@ -37,12 +35,10 @@ public final class TopicRepositoryScanner {
 
     public TopicRepositoryScanner(
             DatasetDefinitionParser datasetDefinitionParser,
-            DatasetGuiParser datasetGuiParser,
             JobDefinitionParser jobDefinitionParser,
             RepositoryDefaultsParser repositoryDefaultsParser,
             JobDefinitionValidator jobDefinitionValidator) {
         this.datasetDefinitionParser = datasetDefinitionParser;
-        this.datasetGuiParser = datasetGuiParser;
         this.jobDefinitionParser = jobDefinitionParser;
         this.repositoryDefaultsParser = repositoryDefaultsParser;
         this.jobDefinitionValidator = jobDefinitionValidator;
@@ -104,9 +100,7 @@ public final class TopicRepositoryScanner {
         }
 
         try {
-            RepositoryDefaults defaults = repositoryDefaultsParser.parse(defaultsFile, sharedPath);
-            messages.addAll(jobDefinitionValidator.validateGui(defaults.getGuiDefinition()));
-            return defaults;
+            return repositoryDefaultsParser.parse(defaultsFile, sharedPath);
         } catch (Exception ex) {
             messages.add(new ValidationMessage(
                     ValidationMessage.Severity.ERROR,
@@ -151,7 +145,6 @@ public final class TopicRepositoryScanner {
         }
 
         JobDefinition jobDefinition = configuration.getJobDefinition();
-        GuiDefinition organizationGui = configuration.getGuiDefinition();
         NotificationConfiguration notificationConfiguration = configuration.getNotificationConfiguration();
         PermissionConfiguration permissionConfiguration = configuration.getPermissionConfiguration();
 
@@ -163,7 +156,6 @@ public final class TopicRepositoryScanner {
                     organizationJobFile));
         }
         organizationMessages.addAll(jobDefinitionValidator.validatePermissions(permissionConfiguration, organizationJobFile));
-        organizationMessages.addAll(jobDefinitionValidator.validateGui(organizationGui));
         messages.addAll(organizationMessages);
         if (organizationMessages.stream().anyMatch(message -> message.getSeverity() == ValidationMessage.Severity.ERROR)) {
             return null;
@@ -197,7 +189,7 @@ public final class TopicRepositoryScanner {
                 orgDir,
                 jobDefinitionPresent,
                 jobDefinition,
-                organizationGui,
+                GuiDefinition.empty(),
                 notificationConfiguration,
                 permissionConfiguration,
                 repositoryDefaults,
@@ -321,20 +313,14 @@ public final class TopicRepositoryScanner {
 
         Path datasetGuiFile = datasetDir.resolve(DATASET_GUI_FILE);
         boolean datasetGuiPresent = Files.isRegularFile(datasetGuiFile);
-        GuiDefinition datasetGui = GuiDefinition.empty();
         if (datasetGuiPresent) {
-            try {
-                datasetGui = datasetGuiParser.parse(datasetGuiFile);
-                messages.addAll(jobDefinitionValidator.validateGui(datasetGui));
-            } catch (Exception ex) {
-                valid = false;
-                messages.add(new ValidationMessage(
-                        ValidationMessage.Severity.ERROR,
-                        "Could not parse " + DATASET_GUI_FILE + ": " + ex.getMessage(),
-                        datasetGuiFile));
-            }
+            valid = false;
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    DATASET_GUI_FILE + " is no longer supported.",
+                    datasetGuiFile));
         }
-        return new DatasetEntry(folderId, datasetDir, definition, valid, datasetGuiPresent, datasetGui);
+        return new DatasetEntry(folderId, datasetDir, definition, valid, datasetGuiPresent, GuiDefinition.empty());
     }
 
     private static boolean isHidden(Path path) {

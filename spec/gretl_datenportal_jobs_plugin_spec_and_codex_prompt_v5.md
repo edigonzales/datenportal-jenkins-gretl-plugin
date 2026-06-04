@@ -1,5 +1,20 @@
 # Spezifikation v5 und Codex-Prompt: Jenkins-Plugin fuer GRETL Datenportal Jobs
 
+## Statushinweis 2026-06-04
+
+Die aktuelle Implementierung wurde gegenueber dieser historischen v5-Spezifikation
+vereinfacht. Der heute gueltige Vertragsstand ist:
+
+- festes Startformular ohne frei definierbare GUI-Felder
+- unterstuetzte Parameter: `ORGANISATION`, `DATASET`, `METADATA_FILE`,
+  `DATA_FILE`, `COMMENT` und datensatzabhaengig `SERIES_ID`
+- keine Unterstuetzung mehr fuer `gui`-Bloecke oder `dataset-gui.yaml`
+- keine Unterstuetzung mehr fuer `ENVIRONMENT`, `DRY_RUN` oder
+  `CONFIRM_PRODUCTION`
+
+Die nachfolgenden v5-Abschnitte bleiben als Historie erhalten, beschreiben aber
+nicht mehr den aktuellen Implementierungsstand.
+
 Arbeitsname / sichtbarer Name: **GRETL Datenportal Jobs**  
 Technischer Name: `jenkins-gretl-datenportal-plugin`  
 Jenkins-URL: `/gretl-datenportal`  

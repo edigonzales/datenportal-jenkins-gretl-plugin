@@ -19,8 +19,6 @@ class StartFormValidatorTest {
                         Map.of(
                                 "ORGANISATION", "afu",
                                 "DATASET", "ch.so.dataset",
-                                "ENVIRONMENT", "test",
-                                "DRY_RUN", "true",
                                 "SERIES_ID", "2026"),
                         Map.of("METADATA_FILE", new UploadedFileInfo("metadata.json", 100))));
 
@@ -33,8 +31,7 @@ class StartFormValidatorTest {
                 job(false),
                 submission(Map.of(
                         "ORGANISATION", "afu",
-                        "DATASET", "ch.so.dataset",
-                        "ENVIRONMENT", "test"), Map.of()));
+                        "DATASET", "ch.so.dataset"), Map.of()));
 
         assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("At least one")));
     }
@@ -46,25 +43,23 @@ class StartFormValidatorTest {
                 submission(
                         Map.of(
                                 "ORGANISATION", "afu",
-                                "DATASET", "ch.so.dataset",
-                                "ENVIRONMENT", "test"),
+                                "DATASET", "ch.so.dataset"),
                         Map.of("DATA_FILE", new UploadedFileInfo("data.csv", 100))));
 
         assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("SERIES_ID")));
     }
 
     @Test
-    void rejectsProductionWithoutConfirm() {
+    void doesNotRequireProductionConfirmationAnymore() {
         List<ValidationMessage> messages = validator.validate(
                 job(false),
                 submission(
                         Map.of(
                                 "ORGANISATION", "afu",
-                                "DATASET", "ch.so.dataset",
-                                "ENVIRONMENT", "production"),
+                                "DATASET", "ch.so.dataset"),
                         Map.of("DATA_FILE", new UploadedFileInfo("data.csv", 100))));
 
-        assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("CONFIRM_PRODUCTION")));
+        assertFalse(hasErrors(messages));
     }
 
     @Test
@@ -74,8 +69,7 @@ class StartFormValidatorTest {
                 submission(
                         Map.of(
                                 "ORGANISATION", "afu",
-                                "DATASET", "ch.so.dataset",
-                                "ENVIRONMENT", "test"),
+                                "DATASET", "ch.so.dataset"),
                         Map.of("METADATA_FILE", new UploadedFileInfo("metadata.yaml", 100))));
 
         assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("METADATA_FILE")));
@@ -88,8 +82,7 @@ class StartFormValidatorTest {
                 submission(
                         Map.of(
                                 "ORGANISATION", "afu",
-                                "DATASET", "ch.so.dataset",
-                                "ENVIRONMENT", "test"),
+                                "DATASET", "ch.so.dataset"),
                         Map.of("DATA_FILE", new UploadedFileInfo("data.xlsx", 100))));
 
         assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("DATA_FILE")));

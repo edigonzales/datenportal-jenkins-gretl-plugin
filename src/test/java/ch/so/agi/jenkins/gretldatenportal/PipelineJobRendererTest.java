@@ -28,14 +28,8 @@ class PipelineJobRendererTest {
                                 if (!(params.DATASET ?: '').trim()) {
                                     error('DATASET muss gesetzt sein.')
                                 }
-                                if (!(params.ENVIRONMENT ?: '').trim()) {
-                                    error('ENVIRONMENT muss gesetzt sein.')
-                                }
-                                if (params.ENVIRONMENT == 'production' && params.CONFIRM_PRODUCTION != true) {
-                                    error('CONFIRM_PRODUCTION muss fuer production gesetzt sein.')
-                                }
                                 currentBuild.displayName = "#${env.BUILD_NUMBER} ${params.ORGANISATION} / ${params.DATASET}"
-                                currentBuild.description = "Datenportal: ${params.ORGANISATION} / ${params.DATASET} / ${params.ENVIRONMENT}"
+                                currentBuild.description = "Datenportal: ${params.ORGANISATION} / ${params.DATASET}"
                             }
                         }
                     }
@@ -45,9 +39,7 @@ class PipelineJobRendererTest {
                             script {
                                 def gradleArgs = [
                                     "-Porganisation=${params.ORGANISATION}",
-                                    "-Pdataset=${params.DATASET}",
-                                    "-Penvironment=${params.ENVIRONMENT}",
-                                    "-PdryRun=${params.DRY_RUN}"
+                                    "-Pdataset=${params.DATASET}"
                                 ]
                                 if ((params.SERIES_ID ?: '').trim()) {
                                     gradleArgs << "-PseriesId=${params.SERIES_ID}"
@@ -97,8 +89,6 @@ class PipelineJobRendererTest {
                 return \"\"\"Status: ${status}
             Organisation: ${params.ORGANISATION}
             Datensatz: ${params.DATASET}
-            Umgebung: ${params.ENVIRONMENT}
-            Dry Run: ${params.DRY_RUN}
             Build: ${env.BUILD_URL}
             Console: ${env.BUILD_URL}console
             \"\"\"
@@ -117,9 +107,9 @@ class PipelineJobRendererTest {
         assertTrue(script.contains("-PmetadataFileName="));
         assertTrue(script.contains("-PdataFileName="));
         assertTrue(script.contains("-PseriesId="));
-        assertFalse(script.contains("-Pmode="));
-        assertFalse(script.contains("params.MODE"));
-        assertTrue(script.contains("CONFIRM_PRODUCTION"));
+        assertFalse(script.contains("-Penvironment="));
+        assertFalse(script.contains("-PdryRun="));
+        assertFalse(script.contains("CONFIRM_PRODUCTION"));
     }
 
     @Test
@@ -148,14 +138,8 @@ class PipelineJobRendererTest {
                                     if (!(params.DATASET ?: '').trim()) {
                                         error('DATASET muss gesetzt sein.')
                                     }
-                                    if (!(params.ENVIRONMENT ?: '').trim()) {
-                                        error('ENVIRONMENT muss gesetzt sein.')
-                                    }
-                                    if (params.ENVIRONMENT == 'production' && params.CONFIRM_PRODUCTION != true) {
-                                        error('CONFIRM_PRODUCTION muss fuer production gesetzt sein.')
-                                    }
                                     currentBuild.displayName = "#${env.BUILD_NUMBER} ${params.ORGANISATION} / ${params.DATASET}"
-                                    currentBuild.description = "Datenportal: ${params.ORGANISATION} / ${params.DATASET} / ${params.ENVIRONMENT}"
+                                    currentBuild.description = "Datenportal: ${params.ORGANISATION} / ${params.DATASET}"
                                 }
                             }
                         }
@@ -165,9 +149,7 @@ class PipelineJobRendererTest {
                                 script {
                                     def gradleArgs = [
                                         "-Porganisation=${params.ORGANISATION}",
-                                        "-Pdataset=${params.DATASET}",
-                                        "-Penvironment=${params.ENVIRONMENT}",
-                                        "-PdryRun=${params.DRY_RUN}"
+                                        "-Pdataset=${params.DATASET}"
                                     ]
                                     if ((params.SERIES_ID ?: '').trim()) {
                                         gradleArgs << "-PseriesId=${params.SERIES_ID}"
@@ -217,8 +199,6 @@ class PipelineJobRendererTest {
                     return \"\"\"Status: ${status}
                 Organisation: ${params.ORGANISATION}
                 Datensatz: ${params.DATASET}
-                Umgebung: ${params.ENVIRONMENT}
-                Dry Run: ${params.DRY_RUN}
                 Build: ${env.BUILD_URL}
                 Console: ${env.BUILD_URL}console
                 \"\"\"

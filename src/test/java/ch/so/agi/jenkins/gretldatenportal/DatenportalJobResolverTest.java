@@ -18,7 +18,7 @@ class DatenportalJobResolverTest {
     }
 
     @Test
-    void mergesSharedOrganizationAndDatasetGuiInOrder() {
+    void ignoresSharedOrganizationAndDatasetGuiOverrides() {
         GuiDefinition sharedGui = new GuiDefinition(List.of(field("COMMENT", "Gemeinsamer Kommentar", "")));
         GuiDefinition organizationGui = new GuiDefinition(List.of(field("COMMENT", "Kommentar AFU", "")));
         GuiDefinition datasetGui = new GuiDefinition(List.of(field("COMMENT", "", "Kommentar zum Datensatz")));
@@ -34,8 +34,8 @@ class DatenportalJobResolverTest {
 
         GuiFieldDefinition comment = field(resolver.resolve(organization, dataset).getGuiDefinition(), "COMMENT");
 
-        assertEquals("Kommentar AFU", comment.getLabel());
-        assertEquals("Kommentar zum Datensatz", comment.getDescription());
+        assertEquals("Kommentar", comment.getLabel());
+        assertEquals("", comment.getDescription());
     }
 
     private OrganizationUnit organization() {

@@ -9,10 +9,13 @@ class DefaultGuiDefinitionFactoryTest {
     private final DefaultGuiDefinitionFactory factory = new DefaultGuiDefinitionFactory();
 
     @Test
-    void rendersNoModeAndOptionalCommentByDefault() {
+    void rendersOnlyFixedFieldsByDefault() {
         GuiDefinition gui = factory.create(false);
 
         assertFalse(hasField(gui, "MODE"));
+        assertFalse(hasField(gui, "ENVIRONMENT"));
+        assertFalse(hasField(gui, "DRY_RUN"));
+        assertFalse(hasField(gui, "CONFIRM_PRODUCTION"));
         assertFalse(field(gui, "COMMENT").isRequired());
     }
 
@@ -30,7 +33,6 @@ class DefaultGuiDefinitionFactoryTest {
         assertFalse(field(gui, "METADATA_FILE").getAllowedExtensions().contains("yaml"));
         assertTrue(field(gui, "DATA_FILE").getAllowedExtensions().contains("csv"));
         assertFalse(field(gui, "DATA_FILE").getAllowedExtensions().contains("xlsx"));
-        assertTrue(field(gui, "CONFIRM_PRODUCTION").getLabel().contains("bestätigen"));
     }
 
     private boolean hasField(GuiDefinition guiDefinition, String id) {

@@ -13,8 +13,8 @@ specification:
 - Topic repository scanner for organizations with mandatory
   `gretl-datenportal-job.yaml`, dataset folders, and mandatory `dataset.json`
   files.
-- YAML parsing for `gretl-datenportal-job.yaml` and `dataset-gui.yaml`.
-- Default GUI model, GUI merge, and server-side start-form validation.
+- YAML parsing for `gretl-datenportal-job.yaml` and `dataset.json`.
+- Fixed start-form model with optional `SERIES_ID` for series datasets.
 - Seed builder and Pipeline job generator for generated workflow jobs.
 - Custom organization `Jenkinsfile` resolution before falling back to the
   repo-owned default template from `shared/Jenkinsfile`.
@@ -22,10 +22,10 @@ specification:
   server-side RootAction checks.
 - Default Pipeline script renderer with `stashedFile` uploads and email-ext
   post-block support for the repo-wide shared template.
-- The `MODE` build parameter is currently reserved and not rendered or passed
-  to Gradle.
 - Basic start and run-detail Jelly views.
-- Unit tests for scanner, GUI merge, start validation, permissions, custom
+- Legacy `gui` blocks and `dataset-gui.yaml` are rejected as unsupported
+  configuration.
+- Unit tests for scanner, start validation, permissions, custom
   Pipeline resolution, and Pipeline rendering.
 
 ## Build
@@ -108,7 +108,7 @@ Relevant keys:
 
 - Required: `id`, `permissions.read`, `permissions.build`
 - Common metadata: `title`, `description`
-- Optional sections: `execution`, `notifications`, `gui`
+- Optional sections: `execution`, `notifications`
 
 Rules:
 
@@ -116,32 +116,32 @@ Rules:
 - `permissions.read` must contain at least one group.
 - `permissions.build` must contain at least one group.
 - Missing or empty permissions are treated as invalid configuration.
+- `gui` is no longer supported and causes a scan error.
 - Jenkins administrators keep their existing bypass for read and build access.
 
-## Dataset GUI Override Scope
+## Fixed Start Form Model
 
-`dataset-gui.yaml` is limited to `gui.fields` overrides. It can adjust GUI
-behavior such as:
+The start form is fixed and no longer configurable through repository YAML.
+Supported fields are:
 
-- `label`
-- `description`
-- `type`
-- `required`
-- `defaultValue`
-- `values`
-- `source`
-- `visibleIf`
-- `requiredIf`
-- `uploadMode`
-- `allowedExtensions`
-- `maxSizeMb`
+- `ORGANISATION`
+- `DATASET`
+- `METADATA_FILE`
+- `DATA_FILE`
+- `COMMENT`
+- `SERIES_ID` only when `dataset.json` sets `"series": true`
 
-It does not control:
+The plugin rejects these legacy configuration forms:
 
-- permissions
-- execution or Jenkinsfile selection
-- notifications
-- dataset metadata from `dataset.json`
+- `gui` blocks in organization YAML
+- `gui` blocks in `shared/gretl-datenportal-defaults.yaml`
+- `dataset-gui.yaml`
+
+The generated Jenkins jobs no longer expose:
+
+- `ENVIRONMENT`
+- `DRY_RUN`
+- `CONFIRM_PRODUCTION`
 
 ## Local Jenkins Dev Setup
 
@@ -189,6 +189,45 @@ http://localhost:8080/gretl-datenportal
 
 For the full local workflow, including the seed job and demo uploads, see
 `/Users/stefan/sources/datenportal-jenkins-dev/README.md`.
+
+## Maintainer Workflows
+
+### Plugin Change End-to-End
+
+Typical local flow after changing Java, Jelly, or other plugin sources:
+
+1. Rebuild the plugin HPI.
+2. Install the rebuilt plugin into the local Jenkins setup.
+3. Fully restart Jenkins.
+4. Re-run the local seed job so generated jobs pick up the new plugin logic.
+5. Open the Datenportal UI and start a generated job.
+
+```bash
+cd /Users/stefan/sources/jenkins-gretl-datenportal-plugin
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk use java 21.0.10-tem
+mvn -ntp package
+
+cd /Users/stefan/sources/datenportal-jenkins-dev
+./bin/install-gretl-datenportal-plugin.sh
+
+# If Jenkins is already running, stop it first and then start it again.
+./bin/start.sh
+```
+
+Then in Jenkins:
+
+1. Run `gretl-datenportal-plugin-generator-local`.
+2. Open `/gretl-datenportal`.
+3. Select a dataset and upload at least one of `METADATA_FILE` or `DATA_FILE`.
+4. Start the generated organization job.
+
+Notes:
+
+- Replacing the `.jpi` alone is not enough. Loaded plugin classes, Jelly views,
+  and descriptors require a Jenkins restart.
+- Re-seeding is required after repository or generator changes because generated
+  jobs are materialized Jenkins jobs, not live views over the topic repository.
 
 The full working specification and Codex prompt live in
 [`spec/gretl_datenportal_jobs_plugin_spec_and_codex_prompt_v5.md`](spec/gretl_datenportal_jobs_plugin_spec_and_codex_prompt_v5.md).

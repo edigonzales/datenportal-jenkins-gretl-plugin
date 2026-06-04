@@ -17,7 +17,6 @@ public final class DatenportalRunSummary {
     private final WorkflowRun run;
     private final String organization;
     private final String dataset;
-    private final String environment;
     private final String datasetTitle;
 
     public DatenportalRunSummary(WorkflowRun run) {
@@ -36,7 +35,6 @@ public final class DatenportalRunSummary {
         this.run = run;
         this.organization = parameterValue(parameters, "ORGANISATION");
         this.dataset = parameterValue(parameters, "DATASET");
-        this.environment = parameterValue(parameters, "ENVIRONMENT");
         this.datasetTitle = datasetTitle == null ? "" : datasetTitle;
     }
 
@@ -80,10 +78,6 @@ public final class DatenportalRunSummary {
 
     public String getDatasetValue() {
         return dataset;
-    }
-
-    public String getEnvironment() {
-        return blankToDash(environment);
     }
 
     public String getStatus() {

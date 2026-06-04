@@ -1,6 +1,5 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
-import hudson.model.BooleanParameterDefinition;
 import hudson.model.ChoiceParameterDefinition;
 import hudson.model.Item;
 import hudson.model.ParameterDefinition;
@@ -75,15 +74,9 @@ public final class GretlDatenportalJobGenerator {
                 "DATASET",
                 organization.getDatasets().stream().map(DatasetEntry::getId).toArray(String[]::new),
                 "Datensatz"));
-        parameters.add(new ChoiceParameterDefinition(
-                "ENVIRONMENT",
-                new String[] {"test", "integration", "production"},
-                "Umgebung"));
         parameters.add(new StashedFileParameterDefinition("METADATA_FILE"));
         parameters.add(new StashedFileParameterDefinition("DATA_FILE"));
-        parameters.add(new BooleanParameterDefinition("DRY_RUN", true, "Dry Run"));
         parameters.add(new TextParameterDefinition("COMMENT", "", "Kommentar"));
-        parameters.add(new BooleanParameterDefinition("CONFIRM_PRODUCTION", false, "Production bestaetigen"));
         parameters.add(new StringParameterDefinition("SERIES_ID", "", "Serie"));
         return parameters;
     }

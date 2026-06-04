@@ -22,21 +22,6 @@ public final class DefaultGuiDefinitionFactory {
                 List.of(),
                 null));
         fields.add(new GuiFieldDefinition(
-                "ENVIRONMENT",
-                "Umgebung",
-                "",
-                ParameterType.CHOICE,
-                true,
-                "test",
-                false,
-                List.of("test", "integration", "production"),
-                null,
-                null,
-                null,
-                "",
-                List.of(),
-                null));
-        fields.add(new GuiFieldDefinition(
                 "METADATA_FILE",
                 "Metadaten hochladen",
                 "",
@@ -66,23 +51,7 @@ public final class DefaultGuiDefinitionFactory {
                 "stashedFile",
                 List.of("csv"),
                 100));
-        fields.add(field("DRY_RUN", "Dry Run", ParameterType.BOOLEAN, false, "true", false));
         fields.add(field("COMMENT", "Kommentar", ParameterType.TEXT, false, "", false));
-        fields.add(new GuiFieldDefinition(
-                "CONFIRM_PRODUCTION",
-                "Produktion bestätigen",
-                "",
-                ParameterType.BOOLEAN,
-                false,
-                "false",
-                false,
-                List.of(),
-                null,
-                new Condition("ENVIRONMENT", "production"),
-                new Condition("ENVIRONMENT", "production"),
-                "",
-                List.of(),
-                null));
         if (includeSeriesId) {
             fields.add(field("SERIES_ID", "Serie", ParameterType.STRING, true, "", false));
         }

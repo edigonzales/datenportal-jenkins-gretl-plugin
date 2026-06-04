@@ -122,10 +122,6 @@ class TopicRepositoryScannerTest {
                 execution:
                   gradleTask: publishShared
                   timeoutMinutes: 25
-                gui:
-                  fields:
-                    - id: COMMENT
-                      label: Gemeinsamer Kommentar
                 notifications:
                   email:
                     recipients:
@@ -145,9 +141,6 @@ class TopicRepositoryScannerTest {
         assertEquals(
                 "data@example.invalid",
                 organization.getNotificationConfiguration().getEmailRecipientsCsv());
-        GuiDefinition gui = new DatenportalJobResolver().resolve(organization, organization.getDatasets().get(0))
-                .getGuiDefinition();
-        assertEquals("Gemeinsamer Kommentar", field(gui, "COMMENT").getLabel());
     }
 
     @Test
@@ -180,6 +173,76 @@ class TopicRepositoryScannerTest {
         OrganizationUnit organization = result.getOrganizations().get(0);
         assertEquals("publishAfu", organization.getJobDefinition().getGradleTask());
         assertEquals(45, organization.getJobDefinition().getTimeoutMinutes());
+    }
+
+    @Test
+    void rejectsGuiInSharedDefaults() throws IOException {
+        writeSharedJenkinsfile();
+        writeSharedDefaults(
+                """
+                gui:
+                  fields:
+                    - id: COMMENT
+                      label: Gemeinsamer Kommentar
+                """);
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("unsupported gui configuration")));
+    }
+
+    @Test
+    void rejectsGuiInOrganizationJobDefinition() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization(
+                "afu",
+                """
+                id: afu
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_AFU
+                gui:
+                  fields:
+                    - id: COMMENT
+                      label: Kommentar AFU
+                """);
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("unsupported gui configuration")));
+        assertTrue(result.getOrganizations().isEmpty());
+    }
+
+    @Test
+    void rejectsDatasetGuiOverrides() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+        Files.writeString(
+                tempDir.resolve("afu/ch.so.abfall.deponien/dataset-gui.yaml"),
+                """
+                gui:
+                  fields:
+                    - id: COMMENT
+                      label: Kommentar
+                """,
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("dataset-gui.yaml is no longer supported")));
+        assertFalse(result.getOrganizations().get(0).getDatasets().get(0).isDefinitionValid());
     }
 
     @Test
@@ -352,12 +415,5 @@ class TopicRepositoryScannerTest {
                 }
                 """.formatted(datasetId, title, series),
                 StandardCharsets.UTF_8);
-    }
-
-    private GuiFieldDefinition field(GuiDefinition definition, String id) {
-        return definition.getFields().stream()
-                .filter(field -> field.getId().equals(id))
-                .findFirst()
-                .orElseThrow();
     }
 }

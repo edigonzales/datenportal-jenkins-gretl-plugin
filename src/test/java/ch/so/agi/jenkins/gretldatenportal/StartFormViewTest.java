@@ -23,16 +23,17 @@ class StartFormViewTest {
     }
 
     @Test
-    void rendersFieldConditionHooksWithoutSidePanels() throws IOException {
+    void rendersStaticFieldsWithoutConditionHooks() throws IOException {
         String jelly = Files.readString(
                 Path.of("src/main/resources/ch/so/agi/jenkins/gretldatenportal/GretlDatenportalRootAction/start.jelly"),
                 StandardCharsets.UTF_8);
 
-        assertTrue(jelly.contains("data-gdp-visible-param=\"${field.visibleIf.parameter}\""));
-        assertTrue(jelly.contains("data-gdp-required-param=\"${field.requiredIf.parameter}\""));
         assertTrue(jelly.contains("data-gdp-file-input=\"true\""));
         assertTrue(jelly.contains("Erlaubt: .json"));
         assertTrue(jelly.contains("Erlaubt: .csv"));
+        assertFalse(jelly.contains("data-gdp-visible-param"));
+        assertFalse(jelly.contains("data-gdp-required-param"));
+        assertFalse(jelly.contains("CONFIRM_PRODUCTION"));
         assertFalse(jelly.contains("gdp-context-strip"));
         assertFalse(jelly.contains("Build Preview"));
         assertFalse(jelly.contains("Parameter-Hilfe"));
