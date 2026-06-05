@@ -10,9 +10,8 @@ specification:
 - RootAction at `/gretl-datenportal`.
 - Global configuration for display name, URL name, Git topic repository
   URL/branch, and a legacy local topic repository path fallback.
-- Topic repository scanner for organizations with mandatory
-  `gretl-datenportal-job.yaml`, dataset folders, and mandatory `dataset.json`
-  files.
+- Topic repository scanner with marker-based detection for organizations via
+  `gretl-datenportal-job.yaml` and datasets via `dataset.json`.
 - YAML parsing for `gretl-datenportal-job.yaml` and `dataset.json`.
 - Fixed start-form model with optional `SERIES_ID` for series datasets.
 - Seed builder and Pipeline job generator for generated workflow jobs.
@@ -88,9 +87,20 @@ exist.
 
 ## Organization Config Schema
 
-Each organization folder must contain a valid `gretl-datenportal-job.yaml`.
-If the file is missing, cannot be parsed, or fails validation, that
-organization is ignored during scan and seed runs and an error is reported.
+Top-level folders are only treated as organizations when they contain a valid
+`gretl-datenportal-job.yaml`. Technical folders such as `gradle/` are ignored
+when they do not look like incomplete organization content. If a top-level
+folder looks like a broken organization, for example because it directly
+contains dataset-like child folders, the scan reports an error.
+
+Within an organization, only child folders with `dataset.json` are treated as
+datasets. Folder names that look like dataset IDs, such as `ch.so.abfall.deponien`,
+but are missing `dataset.json` remain validation errors. Other technical child
+folders are ignored.
+
+Each detected organization folder must contain a valid `gretl-datenportal-job.yaml`.
+If the file cannot be parsed or fails validation, that organization is ignored
+during scan and seed runs and an error is reported.
 
 Minimum expected shape:
 
@@ -181,6 +191,14 @@ topicRepositoryBranch=main
 `topicRepositoryPath` remains available as a legacy fallback when no Git URL is
 configured.
 
+Die lokale Jenkins-Umgebung trennt jetzt bewusst die Java-Laufzeiten:
+
+- Jenkins selbst laeuft auf Java 21.
+- Offline-Bundle, GRETL und Themenrepo-`./gradlew` laufen explizit auf Java 17.
+- Generierte Jobs rufen dafuer `shared/bin/gradlew-java17.sh` auf und erwarten
+  `GRADLE_JAVA_HOME_17` aus `datenportal-jenkins-dev/bin/start.sh` oder dem
+  Docker-Image.
+
 Then open:
 
 ```text
@@ -205,7 +223,7 @@ Typical local flow after changing Java, Jelly, or other plugin sources:
 ```bash
 cd /Users/stefan/sources/jenkins-gretl-datenportal-plugin
 source "$HOME/.sdkman/bin/sdkman-init.sh"
-sdk use java 21.0.10-tem
+sdk use java 21.0.7-tem
 mvn -ntp package
 
 cd /Users/stefan/sources/datenportal-jenkins-dev

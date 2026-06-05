@@ -72,9 +72,16 @@ public final class TopicRepositoryScanner {
                     .filter(path -> !SHARED_DIR.equals(path.getFileName().toString()))
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
                     .forEach(path -> {
-                        OrganizationUnit organization = scanOrganization(path, repositoryDefaults, messages);
-                        if (organization != null) {
-                            organizations.add(organization);
+                        if (isOrganizationDirectory(path)) {
+                            OrganizationUnit organization = scanOrganization(path, repositoryDefaults, messages);
+                            if (organization != null) {
+                                organizations.add(organization);
+                            }
+                        } else if (looksLikeBrokenOrganization(path)) {
+                            messages.add(new ValidationMessage(
+                                    ValidationMessage.Severity.ERROR,
+                                    "Organization is missing " + ORGANIZATION_JOB_FILE + " and will be ignored.",
+                                    path));
                         }
                     });
         } catch (IOException ex) {
@@ -124,14 +131,7 @@ public final class TopicRepositoryScanner {
         }
 
         Path organizationJobFile = orgDir.resolve(ORGANIZATION_JOB_FILE);
-        boolean jobDefinitionPresent = Files.isRegularFile(organizationJobFile);
-        if (!jobDefinitionPresent) {
-            messages.add(new ValidationMessage(
-                    ValidationMessage.Severity.ERROR,
-                    "Organization is missing " + ORGANIZATION_JOB_FILE + " and will be ignored.",
-                    orgDir));
-            return null;
-        }
+        boolean jobDefinitionPresent = true;
 
         OrganizationJobConfiguration configuration;
         try {
@@ -169,7 +169,12 @@ public final class TopicRepositoryScanner {
             datasetDirs.filter(Files::isDirectory)
                     .filter(path -> !isHidden(path))
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                    .forEach(path -> datasets.add(scanDataset(path, messages)));
+                    .forEach(path -> {
+                        DatasetEntry dataset = scanDatasetIfRelevant(path, messages);
+                        if (dataset != null) {
+                            datasets.add(dataset);
+                        }
+                    });
         } catch (IOException ex) {
             messages.add(new ValidationMessage(
                     ValidationMessage.Severity.ERROR,
@@ -271,6 +276,36 @@ public final class TopicRepositoryScanner {
             return repositoryDefaults.getSharedPath().resolve(SHARED_JENKINSFILE);
         }
         return repositoryPath.resolve(SHARED_DIR).resolve(SHARED_JENKINSFILE);
+    }
+
+    private boolean isOrganizationDirectory(Path path) {
+        return Files.isRegularFile(path.resolve(ORGANIZATION_JOB_FILE));
+    }
+
+    private boolean looksLikeBrokenOrganization(Path path) {
+        try (Stream<Path> children = Files.list(path)) {
+            return children.filter(Files::isDirectory)
+                    .filter(child -> !isHidden(child))
+                    .anyMatch(this::isPotentialDatasetDirectory);
+        } catch (IOException ex) {
+            return true;
+        }
+    }
+
+    private DatasetEntry scanDatasetIfRelevant(Path datasetDir, List<ValidationMessage> messages) {
+        if (!isPotentialDatasetDirectory(datasetDir)) {
+            return null;
+        }
+        return scanDataset(datasetDir, messages);
+    }
+
+    private boolean isPotentialDatasetDirectory(Path path) {
+        return Files.isRegularFile(path.resolve(DATASET_DEFINITION_FILE)) || looksLikeDatasetDirectory(path);
+    }
+
+    private boolean looksLikeDatasetDirectory(Path path) {
+        String folderName = path.getFileName().toString();
+        return folderName.contains(".") && isValidRepositoryName(folderName);
     }
 
     private DatasetEntry scanDataset(Path datasetDir, List<ValidationMessage> messages) {

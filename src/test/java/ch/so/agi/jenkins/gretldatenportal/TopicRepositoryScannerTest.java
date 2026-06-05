@@ -115,6 +115,21 @@ class TopicRepositoryScannerTest {
     }
 
     @Test
+    void ignoresTopLevelTechnicalDirectoriesWithoutWarnings() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+        Files.createDirectories(tempDir.resolve("gradle/wrapper"));
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        assertTrue(result.getMessages().stream()
+                .noneMatch(message -> message.getPath() != null && message.getPath().contains("/gradle")));
+    }
+
+    @Test
     void appliesSharedDefaultsAndDoesNotScanSharedAsOrganization() throws IOException {
         writeSharedJenkinsfile();
         writeSharedDefaults(
@@ -272,6 +287,24 @@ class TopicRepositoryScannerTest {
     }
 
     @Test
+    void ignoresTechnicalDirectoriesInsideOrganization() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
+        Files.createDirectories(tempDir.resolve("afu/gradle/wrapper"));
+        Files.createDirectories(tempDir.resolve("afu/build"));
+        Files.createDirectories(tempDir.resolve("afu/scripts"));
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        assertEquals(1, result.getOrganizations().get(0).getDatasets().size());
+        assertTrue(result.getMessages().stream()
+                .noneMatch(message -> message.getPath() != null && message.getPath().contains("/afu/gradle")));
+    }
+
+    @Test
     void ignoresOrganizationWhenPermissionsBlockIsMissing() throws IOException {
         writeSharedJenkinsfile();
         writeOrganization(
@@ -351,6 +384,7 @@ class TopicRepositoryScannerTest {
         writeOrganization("statistikdienst");
         writeOrganizationJenkinsfile("statistikdienst", "pipeline { /* organization */ }");
         writeDataset("statistikdienst", "ch.so.statistik.bevoelkerung", "Bevoelkerung", false);
+        Files.createDirectories(tempDir.resolve("statistikdienst/ch.so.statistik.bevoelkerung/examples"));
 
         ScanResult result = scanner.scan(tempDir);
 

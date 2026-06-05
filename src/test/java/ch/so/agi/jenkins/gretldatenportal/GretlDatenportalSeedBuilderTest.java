@@ -3,6 +3,7 @@ package ch.so.agi.jenkins.gretldatenportal;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import hudson.model.FreeStyleProject;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ class GretlDatenportalSeedBuilderTest {
         GitTestSupport.initRepository(sourceRepository);
         GitTestSupport.writeSharedJenkinsfile(sourceRepository);
         GitTestSupport.addOrganization(sourceRepository, "afu", "ch.so.abfall.deponien");
+        Files.createDirectories(sourceRepository.resolve("gradle/wrapper"));
         GitTestSupport.commitAll(sourceRepository, "initial topics");
 
         FreeStyleProject project = jenkinsRule.createFreeStyleProject("seed");
@@ -34,6 +36,7 @@ class GretlDatenportalSeedBuilderTest {
         assertNotNull(jenkinsRule.jenkins.getItemByFullName("gretl-datenportal-afu", WorkflowJob.class));
 
         GitTestSupport.addOrganization(sourceRepository, "statistikdienst", "ch.so.statistik.bevoelkerung");
+        Files.createDirectories(sourceRepository.resolve("statistikdienst/ch.so.statistik.bevoelkerung/examples"));
         GitTestSupport.commitAll(sourceRepository, "add statistikdienst");
 
         jenkinsRule.buildAndAssertSuccess(project);
