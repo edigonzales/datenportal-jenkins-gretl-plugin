@@ -39,7 +39,7 @@ class TopicRepositoryScannerTest {
     }
 
     @Test
-    void reportsMissingDatasetJson() throws IOException {
+    void reportsMissingDatasetMetadataFile() throws IOException {
         writeSharedJenkinsfile();
         writeOrganization("afu");
         Files.createDirectories(tempDir.resolve("afu/ch.so.missing.definition"));
@@ -48,32 +48,26 @@ class TopicRepositoryScannerTest {
 
         assertTrue(result.hasErrors());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("missing dataset.json")));
+                .anyMatch(message -> message.getMessage().contains("missing a dataset metadata file")));
         assertEquals(1, result.getOrganizations().get(0).getDatasets().size());
         assertFalse(result.getOrganizations().get(0).getDatasets().get(0).isDefinitionValid());
     }
 
     @Test
-    void validatesSeriesBoolean() throws IOException {
+    void reportsInvalidDatasetMetadataXml() throws IOException {
         writeSharedJenkinsfile();
         writeOrganization("afu");
         Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.invalid.series"));
         Files.writeString(
-                datasetDir.resolve("dataset.json"),
-                """
-                {
-                  "id": "ch.so.invalid.series",
-                  "title": "Invalid Series",
-                  "series": "true"
-                }
-                """,
+                datasetDir.resolve("dataset.xtf"),
+                "<broken>",
                 StandardCharsets.UTF_8);
 
         ScanResult result = scanner.scan(tempDir);
 
         assertTrue(result.hasErrors());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("must be true or false")));
+                .anyMatch(message -> message.getMessage().contains("Could not read or parse dataset metadata XML/XTF")));
     }
 
     @Test
@@ -82,13 +76,57 @@ class TopicRepositoryScannerTest {
         writeOrganization("afu");
         Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.folder.name"));
         Files.writeString(
-                datasetDir.resolve("dataset.json"),
+                datasetDir.resolve("wrong-id.xtf"),
+                GitTestSupport.datasetXml("ch.so.other.name", "Wrong ID", "Description", false),
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("identifier must match")));
+    }
+
+    @Test
+    void reportsMultipleDatasetMetadataFiles() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.multiple"));
+        Files.writeString(
+                datasetDir.resolve("first.xtf"),
+                GitTestSupport.datasetXml("ch.so.multiple", "Multiple", "Description", false),
+                StandardCharsets.UTF_8);
+        Files.writeString(
+                datasetDir.resolve("second.xml"),
+                GitTestSupport.datasetXml("ch.so.multiple", "Multiple", "Description", false),
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("exactly one dataset metadata file")));
+    }
+
+    @Test
+    void reportsMissingRequiredDatasetElements() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.missing.description"));
+        Files.writeString(
+                datasetDir.resolve("dataset.xtf"),
                 """
-                {
-                  "id": "ch.so.other.name",
-                  "title": "Wrong ID",
-                  "series": false
-                }
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ili:transfer xmlns="http://www.interlis.ch/xtf/2.4/SO_AGI_DataCatalog_Datasheet_20260523" xmlns:ili="http://www.interlis.ch/xtf/2.4/INTERLIS">
+                  <ili:datasection>
+                    <Metadata ili:bid="b1">
+                      <Dataset ili:tid="ch.so.missing.description">
+                        <identifier>ch.so.missing.description</identifier>
+                        <title>Missing Description</title>
+                      </Dataset>
+                    </Metadata>
+                  </ili:datasection>
+                </ili:transfer>
                 """,
                 StandardCharsets.UTF_8);
 
@@ -96,7 +134,37 @@ class TopicRepositoryScannerTest {
 
         assertTrue(result.hasErrors());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("id must match")));
+                .anyMatch(message -> message.getMessage().contains("description")));
+    }
+
+    @Test
+    void reportsInvalidDatasetRootType() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization("afu");
+        Path datasetDir = Files.createDirectories(tempDir.resolve("afu/ch.so.invalid.type"));
+        Files.writeString(
+                datasetDir.resolve("dataset.xtf"),
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ili:transfer xmlns="http://www.interlis.ch/xtf/2.4/SO_AGI_DataCatalog_Datasheet_20260523" xmlns:ili="http://www.interlis.ch/xtf/2.4/INTERLIS">
+                  <ili:datasection>
+                    <Metadata ili:bid="b1">
+                      <Other ili:tid="ch.so.invalid.type">
+                        <identifier>ch.so.invalid.type</identifier>
+                        <title>Other</title>
+                        <description>Other</description>
+                      </Other>
+                    </Metadata>
+                  </ili:datasection>
+                </ili:transfer>
+                """,
+                StandardCharsets.UTF_8);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertTrue(result.hasErrors());
+        assertTrue(result.getMessages().stream()
+                .anyMatch(message -> message.getMessage().contains("Dataset or DatasetSeries")));
     }
 
     @Test
@@ -280,9 +348,10 @@ class TopicRepositoryScannerTest {
 
         ScanResult result = scanner.scan(tempDir);
 
-        assertTrue(result.hasErrors());
+        assertFalse(result.hasErrors());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("missing gretl-datenportal-job.yaml")));
+                .anyMatch(message -> message.getSeverity() == ValidationMessage.Severity.WARNING
+                        && message.getMessage().contains("no gretl-datenportal-job.yaml")));
         assertTrue(result.getOrganizations().isEmpty());
     }
 
@@ -440,14 +509,8 @@ class TopicRepositoryScannerTest {
     private void writeDataset(String orgId, String datasetId, String title, boolean series) throws IOException {
         Path datasetDir = Files.createDirectories(tempDir.resolve(orgId).resolve(datasetId));
         Files.writeString(
-                datasetDir.resolve("dataset.json"),
-                """
-                {
-                  "id": "%s",
-                  "title": "%s",
-                  "series": %s
-                }
-                """.formatted(datasetId, title, series),
+                datasetDir.resolve(datasetId + "_datasheet.xtf"),
+                GitTestSupport.datasetXml(datasetId, title, "Description for " + datasetId, series),
                 StandardCharsets.UTF_8);
     }
 }

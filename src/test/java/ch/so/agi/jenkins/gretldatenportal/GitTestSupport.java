@@ -42,16 +42,27 @@ final class GitTestSupport {
 
         Path datasetPath = Files.createDirectories(organizationPath.resolve(datasetId));
         Files.writeString(
-                datasetPath.resolve("dataset.json"),
-                """
-                {
-                  "id": "%s",
-                  "title": "%s",
-                  "description": "",
-                  "series": false
-                }
-                """.formatted(datasetId, datasetId),
+                datasetPath.resolve(datasetId + "_datasheet.xtf"),
+                datasetXml(datasetId, datasetId, "Test description", false),
                 StandardCharsets.UTF_8);
+    }
+
+    static String datasetXml(String datasetId, String title, String description, boolean series) {
+        String datasetType = series ? "DatasetSeries" : "Dataset";
+        return """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <ili:transfer xmlns="http://www.interlis.ch/xtf/2.4/SO_AGI_DataCatalog_Datasheet_20260523" xmlns:ili="http://www.interlis.ch/xtf/2.4/INTERLIS">
+                  <ili:datasection>
+                    <Metadata ili:bid="b1">
+                      <%1$s ili:tid="%2$s">
+                        <identifier>%2$s</identifier>
+                        <title>%3$s</title>
+                        <description>%4$s</description>
+                      </%1$s>
+                    </Metadata>
+                  </ili:datasection>
+                </ili:transfer>
+                """.formatted(datasetType, datasetId, title, description);
     }
 
     static void writeSharedJenkinsfile(Path repositoryPath) throws IOException {

@@ -11,8 +11,9 @@ specification:
 - Global configuration for display name, URL name, Git topic repository
   URL/branch, and a legacy local topic repository path fallback.
 - Topic repository scanner with marker-based detection for organizations via
-  `gretl-datenportal-job.yaml` and datasets via `dataset.json`.
-- YAML parsing for `gretl-datenportal-job.yaml` and `dataset.json`.
+  `gretl-datenportal-job.yaml` and datasets via a single XTF/XML datasheet.
+- YAML parsing for `gretl-datenportal-job.yaml` and XML/XTF parsing for dataset
+  metadata.
 - Fixed start-form model with optional `SERIES_ID` for series datasets.
 - Seed builder and Pipeline job generator for generated workflow jobs.
 - Custom organization `Jenkinsfile` resolution before falling back to the
@@ -93,10 +94,11 @@ when they do not look like incomplete organization content. If a top-level
 folder looks like a broken organization, for example because it directly
 contains dataset-like child folders, the scan reports an error.
 
-Within an organization, only child folders with `dataset.json` are treated as
-datasets. Folder names that look like dataset IDs, such as `ch.so.abfall.deponien`,
-but are missing `dataset.json` remain validation errors. Other technical child
-folders are ignored.
+Within an organization, child folders are treated as datasets when they contain
+exactly one metadata file with extension `.xtf` or `.xml`. Folder names that
+look like dataset IDs, such as `ch.so.abfall.deponien`, but are missing such a
+metadata file remain validation errors. Other technical child folders are
+ignored.
 
 Each detected organization folder must contain a valid `gretl-datenportal-job.yaml`.
 If the file cannot be parsed or fails validation, that organization is ignored
@@ -139,7 +141,7 @@ Supported fields are:
 - `METADATA_FILE`
 - `DATA_FILE`
 - `COMMENT`
-- `SERIES_ID` only when `dataset.json` sets `"series": true`
+- `SERIES_ID` only when the dataset metadata root object is `DatasetSeries`
 
 The plugin rejects legacy repository-driven GUI configuration. In practice this
 means:

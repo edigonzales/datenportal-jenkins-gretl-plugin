@@ -12,11 +12,11 @@ import java.util.stream.Stream;
 
 public final class TopicRepositoryScanner {
     public static final String ORGANIZATION_JOB_FILE = "gretl-datenportal-job.yaml";
-    public static final String DATASET_DEFINITION_FILE = "dataset.json";
     public static final String DATASET_GUI_FILE = "dataset-gui.yaml";
     public static final String SHARED_DIR = "shared";
     public static final String SHARED_JENKINSFILE = "Jenkinsfile";
     public static final String REPOSITORY_DEFAULTS_FILE = "gretl-datenportal-defaults.yaml";
+    public static final List<String> DATASET_DEFINITION_EXTENSIONS = List.of(".xtf", ".xml");
 
     private static final Pattern REPOSITORY_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]*$");
 
@@ -79,8 +79,9 @@ public final class TopicRepositoryScanner {
                             }
                         } else if (looksLikeBrokenOrganization(path)) {
                             messages.add(new ValidationMessage(
-                                    ValidationMessage.Severity.ERROR,
-                                    "Organization is missing " + ORGANIZATION_JOB_FILE + " and will be ignored.",
+                                    ValidationMessage.Severity.WARNING,
+                                    "Skipping folder because it has dataset-like child directories but no "
+                                            + ORGANIZATION_JOB_FILE + ".",
                                     path));
                         }
                     });
@@ -300,7 +301,7 @@ public final class TopicRepositoryScanner {
     }
 
     private boolean isPotentialDatasetDirectory(Path path) {
-        return Files.isRegularFile(path.resolve(DATASET_DEFINITION_FILE)) || looksLikeDatasetDirectory(path);
+        return hasDatasetDefinitionFile(path) || looksLikeDatasetDirectory(path);
     }
 
     private boolean looksLikeDatasetDirectory(Path path) {
@@ -321,16 +322,23 @@ public final class TopicRepositoryScanner {
         }
 
         DatasetDefinition definition = new DatasetDefinition(folderId, folderId, "", false);
-        Path datasetJson = datasetDir.resolve(DATASET_DEFINITION_FILE);
+        List<Path> datasetDefinitionFiles = datasetDefinitionFiles(datasetDir);
 
-        if (!Files.isRegularFile(datasetJson)) {
+        if (datasetDefinitionFiles.isEmpty()) {
             valid = false;
             messages.add(new ValidationMessage(
                     ValidationMessage.Severity.ERROR,
-                    "Dataset folder is missing " + DATASET_DEFINITION_FILE + ".",
+                    "Dataset folder is missing a dataset metadata file (*.xtf or *.xml).",
+                    datasetDir));
+        } else if (datasetDefinitionFiles.size() > 1) {
+            valid = false;
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Dataset folder must contain exactly one dataset metadata file (*.xtf or *.xml).",
                     datasetDir));
         } else {
-            DatasetDefinitionParser.ParseResult parseResult = datasetDefinitionParser.parse(datasetJson);
+            Path datasetDefinitionFile = datasetDefinitionFiles.get(0);
+            DatasetDefinitionParser.ParseResult parseResult = datasetDefinitionParser.parse(datasetDefinitionFile);
             messages.addAll(parseResult.getMessages());
             if (parseResult.isValid()) {
                 definition = parseResult.getDefinition();
@@ -338,8 +346,8 @@ public final class TopicRepositoryScanner {
                     valid = false;
                     messages.add(new ValidationMessage(
                             ValidationMessage.Severity.ERROR,
-                            "dataset.json id must match dataset folder name.",
-                            datasetJson));
+                            "Dataset metadata identifier must match dataset folder name.",
+                            datasetDefinitionFile));
                 }
             } else {
                 valid = false;
@@ -361,6 +369,27 @@ public final class TopicRepositoryScanner {
     private static boolean isHidden(Path path) {
         String name = path.getFileName().toString();
         return name.startsWith(".");
+    }
+
+    private boolean hasDatasetDefinitionFile(Path path) {
+        return !datasetDefinitionFiles(path).isEmpty();
+    }
+
+    private List<Path> datasetDefinitionFiles(Path path) {
+        try (Stream<Path> children = Files.list(path)) {
+            return children
+                    .filter(Files::isRegularFile)
+                    .filter(child -> hasDatasetDefinitionExtension(child.getFileName().toString()))
+                    .sorted(Comparator.comparing(child -> child.getFileName().toString()))
+                    .toList();
+        } catch (IOException ex) {
+            return List.of();
+        }
+    }
+
+    private static boolean hasDatasetDefinitionExtension(String fileName) {
+        String lowerCaseFileName = fileName.toLowerCase(Locale.ROOT);
+        return DATASET_DEFINITION_EXTENSIONS.stream().anyMatch(lowerCaseFileName::endsWith);
     }
 
     private static boolean isValidRepositoryName(String value) {

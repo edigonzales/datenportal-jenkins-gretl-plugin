@@ -1,5 +1,6 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
+import hudson.AbortException;
 import hudson.FilePath;
 import hudson.Extension;
 import hudson.Launcher;
@@ -58,8 +59,7 @@ public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildS
             throws IOException, InterruptedException {
         Path repositoryPath = resolveRepositoryPath(listener);
         if (repositoryPath == null) {
-            listener.error("Themen-Repo-Pfad ist nicht konfiguriert.");
-            throw new IOException("Themen-Repo-Pfad ist nicht konfiguriert.");
+            throw new AbortException("Topic repository path is not configured.");
         }
 
         ScanResult scanResult = new TopicRepositoryScanner().scan(repositoryPath);
@@ -70,8 +70,7 @@ public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildS
                     message.getPath() == null ? "" : " (" + message.getPath() + ")");
         }
         if (scanResult.hasErrors()) {
-            listener.error("Themen-Repo enthaelt Validierungsfehler.");
-            throw new IOException("Themen-Repo enthaelt Validierungsfehler.");
+            throw new AbortException("Topic repository validation failed.");
         }
 
         List<String> generated = new GretlDatenportalJobGenerator().generate(scanResult);
