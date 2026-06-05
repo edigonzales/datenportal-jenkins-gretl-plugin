@@ -20,7 +20,6 @@ class JobDefinitionParserTest {
         Files.writeString(
                 yaml,
                 """
-                id: afu
                 title: AFU Datenportal publizieren
                 execution:
                   jobName: gretl-datenportal-afu
@@ -37,10 +36,50 @@ class JobDefinitionParserTest {
 
         OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
 
+        assertEquals("afu", configuration.getJobDefinition().getId());
         assertEquals("gretl-datenportal-afu", configuration.getJobDefinition().getJobName());
         assertEquals("Jenkinsfile", configuration.getJobDefinition().getJenkinsfile());
         assertEquals(45, configuration.getJobDefinition().getTimeoutMinutes());
         assertTrue(configuration.getPermissionConfiguration().hasReadRestrictions());
         assertTrue(configuration.getPermissionConfiguration().hasBuildRestrictions());
+    }
+
+    @Test
+    void usesFolderIdWhenYamlIdIsMissing() throws IOException {
+        Path yaml = tempDir.resolve("gretl-datenportal-job.yaml");
+        Files.writeString(
+                yaml,
+                """
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_AFU
+                """,
+                StandardCharsets.UTF_8);
+
+        OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
+
+        assertEquals("afu", configuration.getJobDefinition().getId());
+    }
+
+    @Test
+    void ignoresYamlIdWhenItDiffersFromFolderName() throws IOException {
+        Path yaml = tempDir.resolve("gretl-datenportal-job.yaml");
+        Files.writeString(
+                yaml,
+                """
+                id: something-else
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_AFU
+                """,
+                StandardCharsets.UTF_8);
+
+        OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
+
+        assertEquals("afu", configuration.getJobDefinition().getId());
     }
 }

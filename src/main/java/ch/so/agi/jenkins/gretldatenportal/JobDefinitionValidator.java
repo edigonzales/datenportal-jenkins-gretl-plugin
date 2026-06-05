@@ -10,9 +10,6 @@ public final class JobDefinitionValidator {
         JobDefinition definition = organization.getJobDefinition();
         Path path = organization.getPath();
 
-        if (!organization.getId().equals(definition.getId())) {
-            messages.add(error("Organization id must match job definition id.", path));
-        }
         if (definition.getJobName().isBlank()) {
             messages.add(error("Job name must not be blank.", path));
         }

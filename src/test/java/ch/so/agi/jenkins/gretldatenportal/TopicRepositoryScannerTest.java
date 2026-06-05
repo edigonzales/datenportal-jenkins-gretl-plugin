@@ -238,7 +238,6 @@ class TopicRepositoryScannerTest {
         writeOrganization(
                 "afu",
                 """
-                id: afu
                 permissions:
                   read:
                     - GA_Gretl_Datenportal_Read
@@ -284,7 +283,6 @@ class TopicRepositoryScannerTest {
         writeOrganization(
                 "afu",
                 """
-                id: afu
                 permissions:
                   read:
                     - GA_Gretl_Datenportal_Read
@@ -378,9 +376,7 @@ class TopicRepositoryScannerTest {
         writeSharedJenkinsfile();
         writeOrganization(
                 "afu",
-                """
-                id: afu
-                """);
+                "");
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
 
         ScanResult result = scanner.scan(tempDir);
@@ -399,7 +395,6 @@ class TopicRepositoryScannerTest {
         writeOrganization(
                 "afu",
                 """
-                id: afu
                 permissions:
                   build:
                     - GA_Gretl_Datenportal_AFU
@@ -420,7 +415,6 @@ class TopicRepositoryScannerTest {
         writeOrganization(
                 "afu",
                 """
-                id: afu
                 permissions:
                   read:
                     - GA_Gretl_Datenportal_Read
@@ -460,17 +454,39 @@ class TopicRepositoryScannerTest {
         assertFalse(result.hasErrors());
     }
 
+    @Test
+    void ignoresOrganizationYamlIdWhenItDiffersFromFolderName() throws IOException {
+        writeSharedJenkinsfile();
+        writeOrganization(
+                "afu",
+                """
+                id: wrong-id
+                permissions:
+                  read:
+                    - GA_Gretl_Datenportal_Read
+                  build:
+                    - GA_Gretl_Datenportal_AFU
+                """);
+        writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
+
+        ScanResult result = scanner.scan(tempDir);
+
+        assertFalse(result.hasErrors());
+        assertEquals(1, result.getOrganizations().size());
+        assertEquals("afu", result.getOrganizations().get(0).getId());
+        assertEquals("afu", result.getOrganizations().get(0).getJobDefinition().getId());
+    }
+
     private void writeOrganization(String id) throws IOException {
         writeOrganization(
                 id,
                 """
-                id: %s
                 permissions:
                   read:
                     - GA_Gretl_Datenportal_Read
                   build:
                     - GA_Gretl_Datenportal_%s
-                """.formatted(id, id.toUpperCase()));
+                """.formatted(id.toUpperCase()));
     }
 
     private void writeOrganization(String id, String yaml) throws IOException {

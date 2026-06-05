@@ -107,7 +107,6 @@ during scan and seed runs and an error is reported.
 Minimum expected shape:
 
 ```yaml
-id: afu
 permissions:
   read:
     - GA_Gretl_Datenportal_Read
@@ -115,20 +114,35 @@ permissions:
     - GA_Gretl_Datenportal_AFU
 ```
 
-Relevant keys:
+Effective organization YAML schema:
 
-- Required: `id`, `permissions.read`, `permissions.build`
-- Common metadata: `title`, `description`
-- Optional sections: `execution`, `notifications`
+| Field | Required | Default / behavior | Effectively used |
+| --- | --- | --- | --- |
+| `title` | No | Falls back to the effective organization id. | Yes |
+| `description` | No | Empty string. | Yes |
+| `permissions.read` | Yes | Must contain at least one group. | Yes |
+| `permissions.build` | Yes | Must contain at least one group. | Yes |
+| `execution.jobName` | No | `gretl-datenportal-<id>` | Yes |
+| `execution.gradleTask` | No | Effective value comes from organization YAML, else `shared/gretl-datenportal-defaults.yaml`, else `publishToDatenportal` | Yes |
+| `execution.timeoutMinutes` | No | Effective value comes from organization YAML, else `shared/gretl-datenportal-defaults.yaml`, else `60` | Yes |
+| `execution.jenkinsfile` | No | Resolved by precedence: org-specific configured path, org `Jenkinsfile`, shared configured path, then `shared/Jenkinsfile` | Yes |
+| `notifications` | No | Optional organization override. If omitted, shared notification defaults continue to apply when configured. | Yes |
+| `department` | No | Ignored by this plugin version. | No |
+| `datasets` | No | Ignored by this plugin version. Dataset discovery comes from child folders with one `.xtf` or `.xml` metadata file. | No |
 
 Rules:
 
-- `id` must match the organization folder name.
+- The organization folder name is the canonical organization id.
+- A YAML `id` value in `gretl-datenportal-job.yaml` is ignored for organization jobs.
 - `permissions.read` must contain at least one group.
 - `permissions.build` must contain at least one group.
 - Missing or empty permissions are treated as invalid configuration.
+- Organization-specific `execution.*` values take precedence over shared defaults. Built-in fallbacks are only used when neither source provides a value.
+- `execution.jenkinsfile` is resolved by precedence, not by a single scalar default value.
+- Missing `notifications` do not disable shared notification defaults; they only mean there is no organization-specific override.
 - Repository-driven GUI configuration is no longer supported and causes a scan
   error.
+- `gui` blocks in `gretl-datenportal-job.yaml` are rejected.
 - Jenkins administrators keep their existing bypass for read and build access.
 
 ## Fixed Start Form Model

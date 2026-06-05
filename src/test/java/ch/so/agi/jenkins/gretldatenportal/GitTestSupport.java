@@ -29,7 +29,6 @@ final class GitTestSupport {
         Files.writeString(
                 organizationPath.resolve("gretl-datenportal-job.yaml"),
                 """
-                id: %s
                 title: %s Datenportal publizieren
                 description: Lokaler Test fuer %s.
                 permissions:
@@ -37,7 +36,7 @@ final class GitTestSupport {
                     - GA_Gretl_Datenportal_Read
                   build:
                     - GA_Gretl_Datenportal_%s
-                """.formatted(organizationId, organizationId.toUpperCase(), organizationId, organizationId.toUpperCase()),
+                """.formatted(organizationId.toUpperCase(), organizationId, organizationId.toUpperCase()),
                 StandardCharsets.UTF_8);
 
         Path datasetPath = Files.createDirectories(organizationPath.resolve(datasetId));

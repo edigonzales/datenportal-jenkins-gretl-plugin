@@ -150,12 +150,6 @@ public final class TopicRepositoryScanner {
         PermissionConfiguration permissionConfiguration = configuration.getPermissionConfiguration();
 
         List<ValidationMessage> organizationMessages = new ArrayList<>();
-        if (!orgId.equals(jobDefinition.getId())) {
-            organizationMessages.add(new ValidationMessage(
-                    ValidationMessage.Severity.ERROR,
-                    ORGANIZATION_JOB_FILE + " id must match organization folder name.",
-                    organizationJobFile));
-        }
         organizationMessages.addAll(jobDefinitionValidator.validatePermissions(permissionConfiguration, organizationJobFile));
         messages.addAll(organizationMessages);
         if (organizationMessages.stream().anyMatch(message -> message.getSeverity() == ValidationMessage.Severity.ERROR)) {

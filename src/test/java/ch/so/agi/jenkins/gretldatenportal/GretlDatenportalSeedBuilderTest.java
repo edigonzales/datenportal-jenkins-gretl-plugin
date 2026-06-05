@@ -84,7 +84,6 @@ class GretlDatenportalSeedBuilderTest {
         Files.writeString(
                 organizationPath.resolve("gretl-datenportal-job.yaml"),
                 """
-                id: afu
                 permissions:
                   read:
                     - GA_Gretl_Datenportal_Read

@@ -13,13 +13,8 @@ public final class JobDefinitionParser {
         Integer configuredTimeout = YamlSupport.integerValue(execution, "timeoutMinutes");
         int timeout = valueOrDefault(configuredTimeout, 60);
 
-        String id = YamlSupport.stringValue(root, "id");
-        if (id.isBlank()) {
-            id = fallbackId;
-        }
-
         JobDefinition jobDefinition = new JobDefinition(
-                id,
+                fallbackId,
                 YamlSupport.stringValue(root, "title"),
                 YamlSupport.stringValue(root, "description"),
                 YamlSupport.stringValue(execution, "jobName"),
