@@ -1,0 +1,50 @@
+= Seed- und Job-Generierung
+:page-layout: docs
+:toc: macro
+:toclevels: 2
+
+toc::[]
+
+== Seed-Builder
+
+Der Jenkins-BuildStep `GretlDatenportalSeedBuilder` ist fuer die Materialisierung
+der Datenportal-Jobs zustaendig. Er:
+
+. loest das konfigurierte Themenrepo auf;
+. aktualisiert bei Git-Konfiguration den verwalteten Checkout;
+. scannt das Repository;
+. protokolliert Validierungsnachrichten im Build-Log;
+. bricht bei Fehlern ab;
+. erzeugt oder aktualisiert danach die Jenkins-Jobs.
+
+== Generierte Jobs
+
+Generiert werden Pipeline-Jobs pro Organisation. Der Jobname kommt aus
+`execution.jobName`, falls gesetzt, sonst aus dem Default
+`gretl-datenportal-<organisations-id>`.
+
+Die RootAction nutzt dieselbe fachliche Scanbasis spaeter fuer:
+
+* Organisationslisten;
+* Datensatzlisten;
+* Run-Uebersichten;
+* Starten eines konkreten Jobs mit den hochgeladenen Dateien.
+
+== Fehlerverhalten
+
+Der Seed-Lauf ist absichtlich streng:
+
+* Scan-Meldungen werden im Jenkins-Log ausgegeben.
+* Wenn mindestens ein Fehler auftritt, endet der Seed-Lauf mit Abbruch.
+* Nur valide Organisationen koennen zu generierten Jobs fuehren.
+
+Damit bleibt sichtbar, ob ein Themenrepo-Aenderung nur einen einzelnen Datensatz
+oder den gesamten Materialisierungslauf beeinflusst.
+
+== Weiterfuehrend
+
+* Die Struktur, die der Seed-Builder scannt, liegt im Repo
+  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo].
+* Der lokale Seed-Job und Jenkins-Start sind im Repo
+  link:https://codeberg.org/edigonzales/datenportal-jenkins-dev[datenportal-jenkins-dev]
+  dokumentiert.

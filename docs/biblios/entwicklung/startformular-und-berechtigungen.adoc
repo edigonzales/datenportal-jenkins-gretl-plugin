@@ -1,0 +1,62 @@
+= Startformular und Berechtigungen
+:page-layout: docs
+:toc: macro
+:toclevels: 2
+
+toc::[]
+
+== RootAction und Startformular
+
+Das Plugin stellt eine RootAction unter `/gretl-datenportal` bereit. Das
+Startformular ist fest verdrahtet und wird nicht mehr aus Repository-YAML
+abgeleitet.
+
+Unterstuetzte Felder:
+
+* `ORGANISATION`
+* `DATASET`
+* `METADATA_FILE`
+* `DATA_FILE`
+* `COMMENT`
+* `SERIES_ID` nur fuer Datensaetze, deren Metadatenwurzel `DatasetSeries` ist
+
+== Serverseitige Validierung
+
+Vor dem Start eines Jobs prueft das Plugin unter anderem:
+
+* die Organisation existiert;
+* der Datensatz existiert;
+* die Organisation darf gelesen werden;
+* die Upload-Regeln sind erfuellt.
+
+Mindestens eine der beiden Upload-Dateien muss vorhanden sein:
+
+* `METADATA_FILE`
+* `DATA_FILE`
+
+== Berechtigungsmodell
+
+Das Berechtigungsmodell kommt aus der Organisations-YAML:
+
+* `permissions.read` steuert Sichtbarkeit in Katalog und Joblisten;
+* `permissions.build` steuert, ob ein Benutzer den generierten Job starten darf.
+
+Jenkins-Administratoren behalten ihren ueblichen Bypass fuer Lese- und
+Build-Rechte.
+
+== Ausgeschlossene Altkonfiguration
+
+Nicht mehr Teil des Startformulars sind:
+
+* `ENVIRONMENT`
+* `DRY_RUN`
+* `CONFIRM_PRODUCTION`
+
+Zusatzfelder aus Repository-YAML werden nicht akzeptiert.
+
+== Weiterfuehrend
+
+* Die fachliche Beschreibung der Organisations-YAML gehoert ins Repo
+  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo].
+* Die lokale Jenkins-Umgebung fuer manuelle Formular- und Upload-Tests liegt im
+  Repo link:https://codeberg.org/edigonzales/datenportal-jenkins-dev[datenportal-jenkins-dev].

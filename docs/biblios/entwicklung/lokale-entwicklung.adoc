@@ -1,0 +1,50 @@
+= Lokale Entwicklung
+:page-layout: docs
+:toc: macro
+:toclevels: 2
+
+toc::[]
+
+== Plugin bauen
+
+```bash
+cd ../jenkins-gretl-datenportal-plugin
+export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.10-tem"
+export PATH="$JAVA_HOME/bin:$PATH"
+mvn -ntp package
+```
+
+Die Tests und das HPI laufen auf Java 21.
+
+== In die lokale Jenkins-Umgebung integrieren
+
+```bash
+cd ../datenportal-jenkins-dev
+./bin/install-gretl-datenportal-plugin.sh
+./bin/start.sh
+```
+
+Danach in Jenkins:
+
+. `gretl-datenportal-plugin-generator-local` ausfuehren;
+. `/gretl-datenportal` oeffnen;
+. eine Organisation und einen Datensatz waehlen;
+. mindestens `METADATA_FILE` oder `DATA_FILE` hochladen;
+. den generierten Job starten.
+
+== Was lokal verifiziert werden sollte
+
+Typische manuelle Pruefpunkte:
+
+* Scan-Meldungen und Seed-Fehlerverhalten;
+* Sichtbarkeit von Organisationen ueber `permissions.read`;
+* Startberechtigung ueber `permissions.build`;
+* Jenkinsfile-Aufloesung und Placeholder im repo-weiten Default;
+* Weitergabe von Upload-Dateien und Parametern an den generierten Job.
+
+== Weiterfuehrend
+
+* Die lokale Jenkins- und Docker-Umgebung liegt im Repo
+  link:https://codeberg.org/edigonzales/datenportal-jenkins-dev[datenportal-jenkins-dev].
+* Der fachliche Inhalt, gegen den getestet wird, liegt im Repo
+  link:https://codeberg.org/edigonzales/datenportal-themenrepo[datenportal-themenrepo].
