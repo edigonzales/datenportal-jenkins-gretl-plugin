@@ -1,12 +1,18 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
 import hudson.Extension;
+import hudson.model.Descriptor.FormException;
+import hudson.triggers.TimerTrigger.DescriptorImpl;
 import hudson.util.FormValidation;
+import java.io.IOException;
 import java.nio.file.Path;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest2;
+import net.sf.json.JSONObject;
 
 @Extension
 @Symbol("gretlDatenportalJobs")
@@ -16,6 +22,9 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     private String topicRepositoryUrl = "";
     private String topicRepositoryBranch = "main";
     private String topicRepositoryPath = "";
+    private boolean seedJobAutoCreate = true;
+    private String seedJobCron = null;
+    private int seedJobBuildsToKeep = -1;
 
     public GretlDatenportalGlobalConfiguration() {
         load();
@@ -84,6 +93,60 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
         save();
     }
 
+    public boolean isSeedJobAutoCreate() {
+        return seedJobAutoCreate;
+    }
+
+    @DataBoundSetter
+    public void setSeedJobAutoCreate(boolean seedJobAutoCreate) {
+        this.seedJobAutoCreate = seedJobAutoCreate;
+        save();
+    }
+
+    public String getSeedJobCron() {
+        if (seedJobCron == null) {
+            return GretlDatenportalSeedJobProvisioner.DEFAULT_SEED_JOB_CRON;
+        }
+        return seedJobCron;
+    }
+
+    @DataBoundSetter
+    public void setSeedJobCron(String seedJobCron) {
+        this.seedJobCron = seedJobCron == null ? null : seedJobCron.strip();
+        save();
+    }
+
+    public int getSeedJobBuildsToKeep() {
+        return seedJobBuildsToKeep <= 0 ? 20 : seedJobBuildsToKeep;
+    }
+
+    @DataBoundSetter
+    public void setSeedJobBuildsToKeep(int seedJobBuildsToKeep) {
+        this.seedJobBuildsToKeep = seedJobBuildsToKeep;
+        save();
+    }
+
+    public boolean isTopicRepositoryConfigured() {
+        return !getTopicRepositoryUrl().isBlank() || !getTopicRepositoryPath().isBlank();
+    }
+
+    @Override
+    public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
+        boolean result = super.configure(req, json);
+        try {
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins != null) {
+                GretlDatenportalSeedJobProvisioner.provisionFromConfiguration(this);
+            }
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof IOException) {
+                throw new FormException(e.getCause(), "seedJobAutoCreate");
+            }
+            throw new FormException(e, "seedJobAutoCreate");
+        }
+        return result;
+    }
+
     public FormValidation doCheckDisplayName(@QueryParameter String value) {
         if (value == null || value.isBlank()) {
             return FormValidation.warning("A display name is recommended.");
@@ -117,6 +180,32 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
         }
         if (value.contains(" ")) {
             return FormValidation.error("Git branch names must not contain spaces.");
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckSeedJobCron(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        DescriptorImpl descriptor = Jenkins.get().getDescriptorByType(DescriptorImpl.class);
+        if (descriptor != null) {
+            return descriptor.doCheckSpec(value, null);
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckSeedJobBuildsToKeep(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        try {
+            int intValue = Integer.parseInt(value);
+            if (intValue <= 0) {
+                return FormValidation.error("Must be a positive integer.");
+            }
+        } catch (NumberFormatException e) {
+            return FormValidation.error("Must be a positive integer.");
         }
         return FormValidation.ok();
     }

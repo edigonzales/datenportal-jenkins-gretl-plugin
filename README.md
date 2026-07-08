@@ -59,8 +59,28 @@ cd ../datenportal-jenkins-dev
 ./bin/start.sh
 ```
 
-Danach in Jenkins den Seed-Job ausfuehren und das Datenportal unter
-`/gretl-datenportal` pruefen.
+Danach den automatisch angelegten Job `gretl-datenportal-seed` manuell starten
+oder auf den Cron-Lauf warten und das Datenportal unter `/gretl-datenportal`
+pruefen.
+
+## Seed-Job
+
+Neben dem Seed-Builder provisioniert das Plugin auch den Seed-Job
+`gretl-datenportal-seed` selbst. Der Job:
+
+- wird automatisch erstellt und aktualisiert, wenn `seedJobAutoCreate=true`;
+- bleibt deaktiviert, solange kein Themenrepo konfiguriert ist;
+- wird per `seedJobCron` (Default `H/15 * * * *`) getriggert;
+- kann jederzeit manuell gestartet werden;
+- verwendet die globale Themenrepo-Konfiguration, nicht duplizierte Repo-Werte
+  im Job.
+
+Ein leerer `seedJobCron` deaktiviert nur den Timer, nicht den Job. Bestehende,
+nicht vom Plugin verwaltete Jobs mit demselben Namen werden nicht ueberschrieben.
+
+Die generierten Datenportal-Jobs sind weiterhin keine Live-Sicht auf das
+Themenrepo. Repo-Aenderungen werden erst nach dem naechsten Seed-Lauf
+materialisiert.
 
 ## Langform-Doku
 

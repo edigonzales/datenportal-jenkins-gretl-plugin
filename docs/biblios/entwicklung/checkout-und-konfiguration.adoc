@@ -14,6 +14,9 @@ Das Plugin konfiguriert global:
 * `topicRepositoryUrl`
 * `topicRepositoryBranch`
 * `topicRepositoryPath` als Legacy-Fallback
+* `seedJobAutoCreate` fuer die automatische Provisionierung des Seed-Jobs
+* `seedJobCron` (Default `H/15 * * * *`) fuer den Timer des Seed-Jobs
+* `seedJobBuildsToKeep` fuer die Log-Retention des Seed-Jobs
 
 Wenn eine Git-URL gesetzt ist, arbeitet das Plugin bevorzugt mit einem
 verwalteten Checkout. Nur wenn keine Git-URL vorhanden ist, greift der alte

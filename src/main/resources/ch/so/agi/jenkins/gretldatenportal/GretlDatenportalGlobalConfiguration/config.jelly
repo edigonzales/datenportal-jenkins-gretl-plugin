@@ -16,5 +16,14 @@
         <f:entry title="Themen-Repo Pfad" field="topicRepositoryPath">
             <f:textbox />
         </f:entry>
+        <f:entry title="Seed-Job automatisch erstellen" field="seedJobAutoCreate">
+            <f:checkbox />
+        </f:entry>
+        <f:entry title="Seed-Job Cron" field="seedJobCron">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Seed-Job Builds behalten" field="seedJobBuildsToKeep">
+            <f:number />
+        </f:entry>
     </f:section>
 </j:jelly>

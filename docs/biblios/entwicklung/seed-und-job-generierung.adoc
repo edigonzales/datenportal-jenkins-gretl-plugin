@@ -17,6 +17,24 @@ der Datenportal-Jobs zustaendig. Er:
 . bricht bei Fehlern ab;
 . erzeugt oder aktualisiert danach die Jenkins-Jobs.
 
+== Seed-Job
+
+Das Plugin provisioniert neben dem Seed-Builder auch den Seed-Job
+`gretl-datenportal-seed` selbst. Der `GretlDatenportalSeedJobProvisioner`:
+
+* erstellt und aktualisiert den Job automatisch, wenn `seedJobAutoCreate=true`;
+* haelt den Job deaktiviert, solange kein Themenrepo konfiguriert ist;
+* triggert ihn per `seedJobCron` (Default `H/15 * * * *`);
+* laesst ihn jederzeit manuell startbar;
+* konfiguriert genau einen `GretlDatenportalSeedBuilder` mit leeren Repo-Feldern,
+  sodass immer die globale Themenrepo-Konfiguration verwendet wird.
+
+Ein leerer `seedJobCron` deaktiviert nur den Timer, nicht den Job. Der Job wird
+mit der Marker-Property `GretlDatenportalManagedSeedJobProperty` gekennzeichnet.
+Bestehende, nicht vom Plugin verwaltete Jobs mit demselben Namen werden nicht
+ueberschrieben. Wird `seedJobAutoCreate` auf `false` gesetzt, wird ein bereits
+pluginverwalteter Seed-Job deaktiviert und sein Timer entfernt.
+
 == Generierte Jobs
 
 Generiert werden Pipeline-Jobs pro Organisation. Der Jobname kommt aus
