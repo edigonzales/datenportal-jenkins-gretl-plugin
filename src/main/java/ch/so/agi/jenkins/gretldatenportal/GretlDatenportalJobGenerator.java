@@ -10,24 +10,36 @@ import hudson.model.Descriptor.FormException;
 import io.jenkins.plugins.file_parameters.StashedFileParameterDefinition;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import jenkins.model.Jenkins;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.suppressions.SuppressRestrictedWarnings;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 public final class GretlDatenportalJobGenerator {
     private final PipelineScriptResolver pipelineScriptResolver;
+    private final GretlDatenportalAuthorizationSynchronizer authorizationSynchronizer;
 
     public GretlDatenportalJobGenerator() {
-        this(new PipelineScriptResolver());
+        this(new PipelineScriptResolver(), new GretlDatenportalAuthorizationSynchronizer());
     }
 
     public GretlDatenportalJobGenerator(PipelineJobRenderer pipelineJobRenderer) {
-        this(new PipelineScriptResolver(pipelineJobRenderer));
+        this(new PipelineScriptResolver(pipelineJobRenderer), new GretlDatenportalAuthorizationSynchronizer());
     }
 
     public GretlDatenportalJobGenerator(PipelineScriptResolver pipelineScriptResolver) {
+        this(pipelineScriptResolver, new GretlDatenportalAuthorizationSynchronizer());
+    }
+
+    GretlDatenportalJobGenerator(
+            PipelineScriptResolver pipelineScriptResolver,
+            GretlDatenportalAuthorizationSynchronizer authorizationSynchronizer) {
         this.pipelineScriptResolver = pipelineScriptResolver;
+        this.authorizationSynchronizer = authorizationSynchronizer;
     }
 
     public List<String> generate(ScanResult scanResult) throws IOException {
@@ -35,6 +47,7 @@ public final class GretlDatenportalJobGenerator {
         jenkins.checkPermission(Item.CONFIGURE);
 
         List<String> generatedJobNames = new ArrayList<>();
+        Set<String> activeJobNames = new HashSet<>();
         for (OrganizationUnit organization : scanResult.getOrganizations()) {
             if (organization.getDatasets().isEmpty()) {
                 continue;
@@ -50,10 +63,34 @@ public final class GretlDatenportalJobGenerator {
             } catch (FormException ex) {
                 throw new IOException("Could not render Pipeline job '" + job.getName() + "'.", ex);
             }
+            authorizationSynchronizer.synchronize(job, organization.getPermissionConfiguration());
             job.save();
-            generatedJobNames.add(job.getName());
+            generatedJobNames.add(job.getFullName());
+            activeJobNames.add(job.getFullName());
         }
+        lockRemovedJobs(jenkins, activeJobNames);
         return generatedJobNames;
+    }
+
+    private void lockRemovedJobs(Jenkins jenkins, Set<String> activeJobNames) throws IOException {
+        for (WorkflowJob job : jenkins.getAllItems(WorkflowJob.class)) {
+            if (!isManagedJob(job)
+                    || activeJobNames.contains(job.getFullName())) {
+                continue;
+            }
+            disable(job);
+            authorizationSynchronizer.lock(job);
+        }
+    }
+
+    private boolean isManagedJob(WorkflowJob job) {
+        return job.getProperty(GretlDatenportalManagedJobProperty.class) != null
+                || job.getName().startsWith("gretl-datenportal-");
+    }
+
+    @SuppressRestrictedWarnings(DoNotUse.class)
+    private void disable(WorkflowJob job) {
+        job.setDisabled(true);
     }
 
     private WorkflowJob getOrCreateJob(Jenkins jenkins, String name) throws IOException {

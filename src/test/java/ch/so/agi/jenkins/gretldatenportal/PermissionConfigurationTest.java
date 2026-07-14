@@ -1,10 +1,14 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,32 +24,47 @@ class PermissionConfigurationTest {
     }
 
     @Test
-    void checksReadAndBuildGroups() {
+    void checksReadAndBuildUsers() {
         PermissionConfiguration configuration = new PermissionConfiguration(
-                List.of("GA_Gretl_Datenportal_Read"),
-                List.of("GA_Gretl_Datenportal_AFU"));
+                List.of("read-user"),
+                List.of("build-user"));
 
-        assertTrue(configuration.canRead(authentication("GA_Gretl_Datenportal_Read")));
-        assertFalse(configuration.canBuild(authentication("GA_Gretl_Datenportal_Read")));
-        assertTrue(configuration.canBuild(authentication("GA_Gretl_Datenportal_AFU")));
+        assertTrue(configuration.canRead(authentication("read-user")));
+        assertFalse(configuration.canBuild(authentication("read-user")));
+        assertTrue(configuration.canRead(authentication("build-user")));
+        assertTrue(configuration.canBuild(authentication("build-user")));
     }
 
     @Test
-    void parsesYamlPermissions() {
+    void parsesYamlTeams() throws IOException {
+        TeamDirectory directory = new TeamDirectory(Map.of(
+                "datenportal-read", Set.of("read-user", "duplicate-user"),
+                "datenportal-build", Set.of("build-user", "duplicate-user")));
         PermissionConfiguration configuration = PermissionConfiguration.fromYaml(Map.of(
-                "read", List.of("GA_Gretl_Datenportal_Read", "GA_Gretl_Datenportal_Read"),
-                "build", List.of("GA_Gretl_Datenportal_AFU")));
+                "read", List.of(Map.of("team", "datenportal-read"), Map.of("team", "datenportal-read")),
+                "build", List.of(Map.of("team", "datenportal-build"))), directory);
 
         assertTrue(configuration.hasReadRestrictions());
         assertTrue(configuration.hasBuildRestrictions());
-        assertTrue(configuration.getReadGroups().contains("GA_Gretl_Datenportal_Read"));
-        assertTrue(configuration.getBuildGroups().contains("GA_Gretl_Datenportal_AFU"));
+        assertTrue(configuration.getReadUsers().contains("read-user"));
+        assertTrue(configuration.getReadUsers().contains("build-user"));
+        assertTrue(configuration.getReadUsers().contains("duplicate-user"));
+        assertEquals(3, configuration.getReadUsers().size());
+        assertTrue(configuration.getBuildUsers().contains("build-user"));
+        assertTrue(configuration.getBuildUsers().contains("duplicate-user"));
+    }
+
+    @Test
+    void rejectsUnknownTeams() {
+        assertThrows(IOException.class, () -> PermissionConfiguration.fromYaml(Map.of(
+                "read", List.of(Map.of("team", "missing-team"))),
+                TeamDirectory.empty()));
     }
 
     private Authentication authentication(String authority) {
         return new UsernamePasswordAuthenticationToken(
-                "user",
+                authority,
                 "n/a",
-                List.of(new SimpleGrantedAuthority(authority)));
+                List.of(new SimpleGrantedAuthority("irrelevant-authority")));
     }
 }

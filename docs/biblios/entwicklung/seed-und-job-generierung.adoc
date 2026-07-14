@@ -29,6 +29,14 @@ Das Plugin provisioniert neben dem Seed-Builder auch den Seed-Job
 * konfiguriert genau einen `GretlDatenportalSeedBuilder` mit leeren Repo-Feldern,
   sodass immer die globale Themenrepo-Konfiguration verwendet wird.
 
+Der Seed-Job ist ein eigener, nicht fachlicher Jenkins-Job. Seine Operatoren
+werden ueber das globale Feld `Seed-Job Operators Team` und die Teamdatei
+`shared/gretl-datenportal-teams.yaml` bestimmt. Dieses Team erhaelt nur
+`Item/Read` und `Item/Build`. `Item/Configure`, `Item/Delete` und `Item/Cancel`
+werden nicht vergeben. Die Seeder-ACL wird beim ersten erfolgreichen Seed-Lauf
+gesetzt; bis dahin benoetigt die Initialisierung einen Jenkins-Administrator.
+Administratoren behalten den Break-glass-Zugriff ueber `Overall/Administer`.
+
 Ein leerer `seedJobCron` deaktiviert nur den Timer, nicht den Job. Der Job wird
 mit der Marker-Property `GretlDatenportalManagedSeedJobProperty` gekennzeichnet.
 Bestehende, nicht vom Plugin verwaltete Jobs mit demselben Namen werden nicht
@@ -48,6 +56,12 @@ Die RootAction nutzt dieselbe fachliche Scanbasis spaeter fuer:
 * Run-Uebersichten;
 * Starten eines konkreten Jobs mit den hochgeladenen Dateien.
 
+Bei jedem erfolgreichen Lauf werden die Projekt-ACLs aller erzeugten Jobs aus
+den aufgeloesten Teams ersetzt. Die Jobs verwenden eine nicht-erbende
+Matrix-ACL. Organisationen, die nicht mehr im Scanergebnis vorkommen, werden
+deaktiviert und erhalten eine leere projektbezogene ACL; ihre Jenkins-Historie
+bleibt erhalten.
+
 == Fehlerverhalten
 
 Der Seed-Lauf ist absichtlich streng:
@@ -55,6 +69,9 @@ Der Seed-Lauf ist absichtlich streng:
 * Scan-Meldungen werden im Jenkins-Log ausgegeben.
 * Wenn mindestens ein Fehler auftritt, endet der Seed-Lauf mit Abbruch.
 * Nur valide Organisationen koennen zu generierten Jobs fuehren.
+* Bei Fehlern in der Teams- oder Berechtigungskonfiguration werden verwaltete
+  Organisationsjobs gesperrt. Die bisher gueltige Seeder-ACL wird nicht
+  ersetzt.
 
 Damit bleibt sichtbar, ob ein Themenrepo-Aenderung nur einen einzelnen Datensatz
 oder den gesamten Materialisierungslauf beeinflusst.

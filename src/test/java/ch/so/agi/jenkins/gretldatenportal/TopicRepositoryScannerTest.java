@@ -240,9 +240,9 @@ class TopicRepositoryScannerTest {
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 execution:
                   gradleTask: publishAfu
                   timeoutMinutes: 45
@@ -285,9 +285,9 @@ class TopicRepositoryScannerTest {
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 gui:
                   fields:
                     - id: COMMENT
@@ -342,6 +342,7 @@ class TopicRepositoryScannerTest {
     @Test
     void reportsMissingOrganizationJobDefinition() throws IOException {
         writeSharedJenkinsfile();
+        writeSharedTeams();
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
 
         ScanResult result = scanner.scan(tempDir);
@@ -384,9 +385,9 @@ class TopicRepositoryScannerTest {
         assertTrue(result.hasErrors());
         assertTrue(result.getOrganizations().isEmpty());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one group.")));
+                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one team.")));
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one group.")));
+                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one team.")));
     }
 
     @Test
@@ -397,7 +398,7 @@ class TopicRepositoryScannerTest {
                 """
                 permissions:
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 """);
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
 
@@ -406,7 +407,7 @@ class TopicRepositoryScannerTest {
         assertTrue(result.hasErrors());
         assertTrue(result.getOrganizations().isEmpty());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one group.")));
+                .anyMatch(message -> message.getMessage().contains("permissions.read must contain at least one team.")));
     }
 
     @Test
@@ -417,7 +418,7 @@ class TopicRepositoryScannerTest {
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                 """);
         writeDataset("afu", "ch.so.gewaesser.wasserqualitaet", "Wasserqualitaet", false);
 
@@ -426,7 +427,7 @@ class TopicRepositoryScannerTest {
         assertTrue(result.hasErrors());
         assertTrue(result.getOrganizations().isEmpty());
         assertTrue(result.getMessages().stream()
-                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one group.")));
+                .anyMatch(message -> message.getMessage().contains("permissions.build must contain at least one team.")));
     }
 
     @Test
@@ -463,9 +464,9 @@ class TopicRepositoryScannerTest {
                 id: wrong-id
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 """);
         writeDataset("afu", "ch.so.abfall.deponien", "Deponien", false);
 
@@ -483,13 +484,14 @@ class TopicRepositoryScannerTest {
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_%s
+                    - team: datenportal-build
                 """.formatted(id.toUpperCase()));
     }
 
     private void writeOrganization(String id, String yaml) throws IOException {
+        writeSharedTeams();
         Path orgDir = Files.createDirectories(tempDir.resolve(id));
         Files.writeString(
                 orgDir.resolve("gretl-datenportal-job.yaml"),
@@ -503,6 +505,28 @@ class TopicRepositoryScannerTest {
                 sharedDir.resolve("gretl-datenportal-defaults.yaml"),
                 yaml,
                 StandardCharsets.UTF_8);
+    }
+
+    private void writeSharedTeams() throws IOException {
+        Path sharedDir = Files.createDirectories(tempDir.resolve("shared"));
+        Path teamsFile = sharedDir.resolve(TopicRepositoryScanner.TEAMS_FILE);
+        if (!Files.exists(teamsFile)) {
+            Files.writeString(
+                    teamsFile,
+                    """
+                    teams:
+                      datenportal-read:
+                        users:
+                          - read-user
+                      datenportal-build:
+                        users:
+                          - build-user
+                      gretl-datenportal-seed-operators:
+                        users:
+                          - seed-user
+                    """,
+                    StandardCharsets.UTF_8);
+        }
     }
 
     private void writeSharedJenkinsfile() throws IOException {

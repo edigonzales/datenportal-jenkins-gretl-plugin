@@ -78,6 +78,62 @@ Neben dem Seed-Builder provisioniert das Plugin auch den Seed-Job
 Ein leerer `seedJobCron` deaktiviert nur den Timer, nicht den Job. Bestehende,
 nicht vom Plugin verwaltete Jobs mit demselben Namen werden nicht ueberschrieben.
 
+## Teams und Jenkins-Autorisierung
+
+Die Benutzer werden im Themenrepo Teams zugeordnet. Die Datei
+`shared/gretl-datenportal-teams.yaml` ist die einzige Quelle fuer diese
+Zuordnung:
+
+```yaml
+teams:
+  gretl-datenportal-seed-operators:
+    users:
+      - sziegler
+      - mmuster
+
+  datenportal-read:
+    users:
+      - bbeispiel
+
+  statistikdienst-build:
+    users:
+      - sziegler
+```
+
+Eine Organisationsdatei referenziert nur noch Team-IDs:
+
+```yaml
+permissions:
+  read:
+    - team: datenportal-read
+  build:
+    - team: statistikdienst-build
+```
+
+Unter `Manage Jenkins -> System -> GRETL Datenportal Jobs` wird bei
+`Seed-Job Operators Team` die Team-ID des Seeder-Teams eingetragen. Das Feld
+ist keine Organisationsberechtigung. Das Seeder-Team darf den verwalteten Job
+sehen und starten, aber nicht konfigurieren, loeschen, abbrechen oder seinen
+Builder ersetzen. Der erste Seed-Lauf muss deshalb durch einen Jenkins-
+Administrator erfolgen; danach synchronisiert ein erfolgreicher Seed-Lauf auch
+die Seeder-ACL.
+
+Fuer die Jenkins-Sicherheit muss das Plugin `matrix-auth` installiert sein und
+Jenkins muss die **Project-based Matrix Authorization Strategy** verwenden.
+LDAP oder Entra ID authentisiert die Benutzer; die Teamdatei liefert die
+projektbezogenen Berechtigungen. Global sollten normale Benutzer nur
+`Overall/Read` erhalten. Pauschale globale `Item/Read`- oder `Item/Build`-
+Rechte fuer `authenticated` duerfen nicht gesetzt werden, weil globale Rechte
+additiv zu den Projekt-ACLs wirken. Jenkins-Administratoren werden separat mit
+`Overall/Administer` abgesichert. Die Themenrepo-YAML vergibt niemals
+globale Administrationsrechte und insbesondere kein `Item/Configure`.
+
+Pluginverwaltete Organisationsjobs erhalten eine nicht-erbende Matrix-ACL. Bei
+einem erfolgreichen Seed-Lauf werden Team-Aenderungen und entfernte
+Organisationen synchronisiert. Eine ungueltige Teams- oder
+Berechtigungskonfiguration bricht den Lauf ab; die letzte gueltige Seeder-ACL
+bleibt dabei erhalten.
+
 Die generierten Datenportal-Jobs sind weiterhin keine Live-Sicht auf das
 Themenrepo. Repo-Aenderungen werden erst nach dem naechsten Seed-Lauf
 materialisiert.

@@ -25,6 +25,7 @@ final class GitTestSupport {
 
     static void addOrganization(Path repositoryPath, String organizationId, String datasetId)
             throws IOException {
+        writeTeams(repositoryPath);
         Path organizationPath = Files.createDirectories(repositoryPath.resolve(organizationId));
         Files.writeString(
                 organizationPath.resolve("gretl-datenportal-job.yaml"),
@@ -33,10 +34,10 @@ final class GitTestSupport {
                 description: Lokaler Test fuer %s.
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_%s
-                """.formatted(organizationId.toUpperCase(), organizationId, organizationId.toUpperCase()),
+                    - team: datenportal-build
+                """.formatted(organizationId.toUpperCase(), organizationId),
                 StandardCharsets.UTF_8);
 
         Path datasetPath = Files.createDirectories(organizationPath.resolve(datasetId));
@@ -85,6 +86,28 @@ final class GitTestSupport {
                 }
                 """,
                 StandardCharsets.UTF_8);
+    }
+
+    static void writeTeams(Path repositoryPath) throws IOException {
+        Path sharedPath = Files.createDirectories(repositoryPath.resolve("shared"));
+        Path teamsFile = sharedPath.resolve(TopicRepositoryScanner.TEAMS_FILE);
+        if (!Files.exists(teamsFile)) {
+            Files.writeString(
+                    teamsFile,
+                    """
+                    teams:
+                      datenportal-read:
+                        users:
+                          - read-user
+                      datenportal-build:
+                        users:
+                          - build-user
+                      gretl-datenportal-seed-operators:
+                        users:
+                          - seed-user
+                    """,
+                    StandardCharsets.UTF_8);
+        }
     }
 
     static String fileUrl(Path path) {

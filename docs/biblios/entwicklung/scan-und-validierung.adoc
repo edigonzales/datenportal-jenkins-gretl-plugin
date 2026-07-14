@@ -25,10 +25,15 @@ enthalten, bleiben Validierungsfehler. Technische Unterordner werden ignoriert.
 
 == Shared Defaults und implizites `shared/Jenkinsfile`
 
-Beim Scan liest das Plugin, falls vorhanden:
+Beim Scan liest das Plugin:
 
 * `shared/gretl-datenportal-defaults.yaml`
+* `shared/gretl-datenportal-teams.yaml`
 * `shared/Jenkinsfile`
+
+Die Teams-Datei ist fuer die Autorisierung erforderlich. Sie muss mindestens
+ein Team mit mindestens einer nichtleeren Benutzer-ID enthalten, sobald das
+Themenrepo gescannt wird.
 
 Fehlt `shared/Jenkinsfile`, ist das nur dann ein Fehler, wenn mindestens eine
 Organisation keine spezifischere Jenkinsfile-Konfiguration aufloest.
@@ -37,8 +42,10 @@ Organisation keine spezifischere Jenkinsfile-Konfiguration aufloest.
 
 Wichtige Regeln:
 
-* `permissions.read` muss mindestens eine Gruppe enthalten.
-* `permissions.build` muss mindestens eine Gruppe enthalten.
+* `permissions.read` muss mindestens ein Team enthalten.
+* `permissions.build` muss mindestens ein Team enthalten.
+* Jede referenzierte Team-ID muss in
+  `shared/gretl-datenportal-teams.yaml` definiert sein.
 * Leere oder ungueltige Organisationskonfigurationen werden nicht generiert.
 * Fehlende oder unlesbare YAML-Dateien fuehren zu Scan-Fehlern oder zum
   Ueberspringen der betroffenen Organisation.

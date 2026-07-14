@@ -1,17 +1,34 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Item;
 import hudson.model.Result;
+import hudson.model.queue.QueueTaskFuture;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
+import hudson.security.ProjectMatrixAuthorizationStrategy;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.matrixauth.PermissionEntry;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 
 class GretlDatenportalSeedBuilderTest {
     @TempDir
@@ -23,6 +40,7 @@ class GretlDatenportalSeedBuilderTest {
         Path sourceRepository = tempDir.resolve("source-repo");
         GitTestSupport.initRepository(sourceRepository);
         GitTestSupport.writeSharedJenkinsfile(sourceRepository);
+        GitTestSupport.writeTeams(sourceRepository);
         GitTestSupport.addOrganization(sourceRepository, "afu", "ch.so.abfall.deponien");
         Files.createDirectories(sourceRepository.resolve("gradle/wrapper"));
         GitTestSupport.commitAll(sourceRepository, "initial topics");
@@ -80,13 +98,14 @@ class GretlDatenportalSeedBuilderTest {
         Path sourceRepository = tempDir.resolve("source-repo");
         GitTestSupport.initRepository(sourceRepository);
         GitTestSupport.writeSharedJenkinsfile(sourceRepository);
+        GitTestSupport.writeTeams(sourceRepository);
         Path organizationPath = Files.createDirectories(sourceRepository.resolve("afu"));
         Files.writeString(
                 organizationPath.resolve("gretl-datenportal-job.yaml"),
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                 """);
         GitTestSupport.commitAll(sourceRepository, "invalid permissions");
 
@@ -97,7 +116,7 @@ class GretlDatenportalSeedBuilderTest {
                 "main"));
 
         FreeStyleBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
-        jenkinsRule.assertLogContains("ERROR: permissions.build must contain at least one group.", build);
+        jenkinsRule.assertLogContains("ERROR: permissions.build must contain at least one team.", build);
         jenkinsRule.assertLogContains("ERROR: Topic repository validation failed.", build);
     }
 
@@ -109,5 +128,47 @@ class GretlDatenportalSeedBuilderTest {
 
         FreeStyleBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
         jenkinsRule.assertLogContains("ERROR: Topic repository path is not configured.", build);
+    }
+
+    @Test
+    @WithJenkins
+    void seedOperatorCanRunSeedWithoutGlobalConfigurePermission(JenkinsRule jenkinsRule) throws Exception {
+        Path sourceRepository = tempDir.resolve("operator-repo");
+        GitTestSupport.initRepository(sourceRepository);
+        GitTestSupport.writeSharedJenkinsfile(sourceRepository);
+        GitTestSupport.addOrganization(sourceRepository, "afu", "ch.so.abfall.deponien");
+        GitTestSupport.commitAll(sourceRepository, "operator seed fixture");
+
+        GretlDatenportalGlobalConfiguration configuration = GretlDatenportalGlobalConfiguration.get();
+        configuration.setTopicRepositoryUrl(GitTestSupport.fileUrl(sourceRepository));
+        configuration.setTopicRepositoryBranch("main");
+        new GretlDatenportalSeedJobProvisioner().ensureSeedJob(jenkinsRule.jenkins, configuration);
+
+        FreeStyleProject seedJob = (FreeStyleProject) jenkinsRule.jenkins.getItem(
+                GretlDatenportalSeedJobProvisioner.DEFAULT_SEED_JOB_NAME);
+        new GretlDatenportalAuthorizationSynchronizer().synchronizeSeedJob(
+                seedJob,
+                new TeamDirectory(Map.of(
+                        "gretl-datenportal-seed-operators", Set.of("seed-user"))),
+                configuration.getSeedJobOperatorsTeam());
+
+        ProjectMatrixAuthorizationStrategy authorization = new ProjectMatrixAuthorizationStrategy();
+        authorization.getGrantedPermissionEntries()
+                .computeIfAbsent(Jenkins.READ, ignored -> new HashSet<>())
+                .add(PermissionEntry.user("seed-user"));
+        jenkinsRule.jenkins.setAuthorizationStrategy(authorization);
+
+        Authentication operator = new UsernamePasswordAuthenticationToken("seed-user", "n/a", List.of());
+        assertTrue(seedJob.getACL().hasPermission2(operator, Item.BUILD));
+        assertFalse(jenkinsRule.jenkins.getACL().hasPermission2(operator, Item.CONFIGURE));
+
+        QueueTaskFuture<FreeStyleBuild> future;
+        try (ACLContext ignored = ACL.as2(operator)) {
+            future = seedJob.scheduleBuild2(0);
+        }
+        assertNotNull(future);
+        FreeStyleBuild build = future.get(60, TimeUnit.SECONDS);
+        assertNotNull(build);
+        assertEquals(Result.SUCCESS, build.getResult());
     }
 }

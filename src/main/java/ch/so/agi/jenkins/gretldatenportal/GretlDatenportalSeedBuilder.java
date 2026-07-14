@@ -5,6 +5,8 @@ import hudson.FilePath;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
+import hudson.model.FreeStyleProject;
+import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
@@ -13,7 +15,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.suppressions.SuppressRestrictedWarnings;
 import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -70,11 +76,68 @@ public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildS
                     message.getPath() == null ? "" : " (" + message.getPath() + ")");
         }
         if (scanResult.hasErrors()) {
+            if (hasAuthorizationErrors(scanResult)) {
+                lockManagedOrganizationJobs();
+            }
             throw new AbortException("Topic repository validation failed.");
+        }
+
+        GretlDatenportalAuthorizationSynchronizer authorizationSynchronizer =
+                new GretlDatenportalAuthorizationSynchronizer();
+        FreeStyleProject seedJob = resolveManagedSeedJob();
+        if (seedJob != null) {
+            authorizationSynchronizer.synchronizeSeedJob(
+                    seedJob,
+                    scanResult.getTeamDirectory(),
+                    GretlDatenportalGlobalConfiguration.get().getSeedJobOperatorsTeam());
         }
 
         List<String> generated = new GretlDatenportalJobGenerator().generate(scanResult);
         listener.getLogger().println("Generated GRETL Datenportal jobs: " + generated);
+    }
+
+    private FreeStyleProject resolveManagedSeedJob() {
+        if (Jenkins.getInstanceOrNull() == null) {
+            return null;
+        }
+        Item item = Jenkins.get().getItem(GretlDatenportalSeedJobProvisioner.DEFAULT_SEED_JOB_NAME);
+        if (item instanceof FreeStyleProject project
+                && project.getProperty(GretlDatenportalManagedSeedJobProperty.class) != null) {
+            return project;
+        }
+        return null;
+    }
+
+    private boolean hasAuthorizationErrors(ScanResult scanResult) {
+        return scanResult.getMessages().stream()
+                .filter(ValidationMessage::isError)
+                .map(ValidationMessage::getMessage)
+                .anyMatch(message -> message.contains(TopicRepositoryScanner.TEAMS_FILE)
+                        || message.contains("permissions."));
+    }
+
+    private void lockManagedOrganizationJobs() throws IOException {
+        if (Jenkins.getInstanceOrNull() == null) {
+            return;
+        }
+        GretlDatenportalAuthorizationSynchronizer synchronizer =
+                new GretlDatenportalAuthorizationSynchronizer();
+        for (WorkflowJob job : Jenkins.get().getAllItems(WorkflowJob.class)) {
+            if (isManagedJob(job)) {
+                disable(job);
+                synchronizer.lock(job);
+            }
+        }
+    }
+
+    private boolean isManagedJob(WorkflowJob job) {
+        return job.getProperty(GretlDatenportalManagedJobProperty.class) != null
+                || job.getName().startsWith("gretl-datenportal-");
+    }
+
+    @SuppressRestrictedWarnings(DoNotUse.class)
+    private void disable(WorkflowJob job) {
+        job.setDisabled(true);
     }
 
     private Path resolveRepositoryPath(TaskListener listener) throws IOException, InterruptedException {

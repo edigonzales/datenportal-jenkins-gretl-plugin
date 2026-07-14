@@ -36,10 +36,52 @@ Mindestens eine der beiden Upload-Dateien muss vorhanden sein:
 
 == Berechtigungsmodell
 
-Das Berechtigungsmodell kommt aus der Organisations-YAML:
+Das Berechtigungsmodell kommt aus zwei Teilen. Die gemeinsame Datei
+`shared/gretl-datenportal-teams.yaml` ordnet Benutzer Team-IDs zu:
+
+[source,yaml]
+----
+teams:
+  datenportal-read:
+    users:
+      - bbeispiel
+  statistikdienst-build:
+    users:
+      - sziegler
+----
+
+Die Organisations-YAML referenziert diese Teams:
+
+[source,yaml]
+----
+permissions:
+  read:
+    - team: datenportal-read
+  build:
+    - team: statistikdienst-build
+----
+
+Dabei gilt:
 
 * `permissions.read` steuert Sichtbarkeit in Katalog und Joblisten;
 * `permissions.build` steuert, ob ein Benutzer den generierten Job starten darf.
+* Ein Benutzer mit `build` erhält auch `read`, damit der Job in Jenkins und im
+  Startformular sichtbar ist.
+* Unbekannte Teams, leere Teams und leere Benutzer-IDs sind
+  Validierungsfehler.
+
+Bei der Jobgenerierung wird dieselbe Aufloesung als Jenkins-Projekt-ACL auf den
+generierten `WorkflowJob` geschrieben. Die ACL ist nicht-erbend und enthaelt
+nur `Item/Read` und `Item/Build`; insbesondere wird kein `Item/Configure`
+vergeben. Dadurch koennen berechtigte Benutzer den Job starten, aber weder
+seine Pipeline noch seine ACL umprogrammieren.
+
+Die Jenkins-Administration muss dafuer das Plugin `matrix-auth` und die
+**Project-based Matrix Authorization Strategy** aktivieren. Globale
+`Item/Read`- oder `Item/Build`-Rechte fuer `authenticated` duerfen nicht
+pauschal vergeben werden, da globale Rechte additiv sind. Administratoren
+behalten ihren Zugriff ueber `Overall/Administer`; das Seeder-Team ist kein
+Administrator-Team.
 
 Jenkins-Administratoren behalten ihren ueblichen Bypass fuer Lese- und
 Build-Rechte.

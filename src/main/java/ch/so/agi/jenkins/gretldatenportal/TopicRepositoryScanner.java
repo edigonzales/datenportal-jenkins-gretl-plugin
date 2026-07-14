@@ -16,6 +16,7 @@ public final class TopicRepositoryScanner {
     public static final String SHARED_DIR = "shared";
     public static final String SHARED_JENKINSFILE = "Jenkinsfile";
     public static final String REPOSITORY_DEFAULTS_FILE = "gretl-datenportal-defaults.yaml";
+    public static final String TEAMS_FILE = "gretl-datenportal-teams.yaml";
     public static final List<String> DATASET_DEFINITION_EXTENSIONS = List.of(".xtf", ".xml");
 
     private static final Pattern REPOSITORY_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9_.-]*$");
@@ -65,6 +66,7 @@ public final class TopicRepositoryScanner {
         }
 
         RepositoryDefaults repositoryDefaults = scanRepositoryDefaults(repositoryPath, messages);
+        TeamDirectory teamDirectory = scanTeamDirectory(repositoryPath, messages);
 
         try (Stream<Path> orgDirs = Files.list(repositoryPath)) {
             orgDirs.filter(Files::isDirectory)
@@ -73,7 +75,7 @@ public final class TopicRepositoryScanner {
                     .sorted(Comparator.comparing(path -> path.getFileName().toString()))
                     .forEach(path -> {
                         if (isOrganizationDirectory(path)) {
-                            OrganizationUnit organization = scanOrganization(path, repositoryDefaults, messages);
+                            OrganizationUnit organization = scanOrganization(path, repositoryDefaults, teamDirectory, messages);
                             if (organization != null) {
                                 organizations.add(organization);
                             }
@@ -93,7 +95,7 @@ public final class TopicRepositoryScanner {
         }
 
         validateSharedDefaultPipeline(repositoryPath, repositoryDefaults, organizations, messages);
-        return new ScanResult(repositoryPath, organizations, messages);
+        return new ScanResult(repositoryPath, organizations, messages, teamDirectory);
     }
 
     private RepositoryDefaults scanRepositoryDefaults(Path repositoryPath, List<ValidationMessage> messages) {
@@ -118,9 +120,40 @@ public final class TopicRepositoryScanner {
         }
     }
 
+    private TeamDirectory scanTeamDirectory(Path repositoryPath, List<ValidationMessage> messages) {
+        Path sharedPath = repositoryPath.resolve(SHARED_DIR);
+        if (!Files.isDirectory(sharedPath)) {
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Topic repository is missing shared/" + TEAMS_FILE + ".",
+                    repositoryPath.resolve(SHARED_DIR).resolve(TEAMS_FILE)));
+            return TeamDirectory.empty();
+        }
+
+        Path teamsFile = sharedPath.resolve(TEAMS_FILE);
+        if (!Files.isRegularFile(teamsFile)) {
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Topic repository is missing shared/" + TEAMS_FILE + ".",
+                    teamsFile));
+            return TeamDirectory.empty();
+        }
+
+        try {
+            return new TeamDirectoryParser().parse(teamsFile);
+        } catch (Exception ex) {
+            messages.add(new ValidationMessage(
+                    ValidationMessage.Severity.ERROR,
+                    "Could not parse " + TEAMS_FILE + ": " + ex.getMessage(),
+                    teamsFile));
+            return TeamDirectory.empty();
+        }
+    }
+
     private OrganizationUnit scanOrganization(
             Path orgDir,
             RepositoryDefaults repositoryDefaults,
+            TeamDirectory teamDirectory,
             List<ValidationMessage> messages) {
         String orgId = orgDir.getFileName().toString();
         if (!isValidRepositoryName(orgId)) {
@@ -136,7 +169,7 @@ public final class TopicRepositoryScanner {
 
         OrganizationJobConfiguration configuration;
         try {
-            configuration = jobDefinitionParser.parse(organizationJobFile, orgId);
+            configuration = jobDefinitionParser.parse(organizationJobFile, orgId, teamDirectory);
         } catch (Exception ex) {
             messages.add(new ValidationMessage(
                     ValidationMessage.Severity.ERROR,

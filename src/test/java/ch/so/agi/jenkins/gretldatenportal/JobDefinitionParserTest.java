@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,13 +30,14 @@ class JobDefinitionParserTest {
                   timeoutMinutes: 45
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 """,
                 StandardCharsets.UTF_8);
 
-        OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
+        OrganizationJobConfiguration configuration = new JobDefinitionParser()
+                .parse(yaml, "afu", teamDirectory());
 
         assertEquals("afu", configuration.getJobDefinition().getId());
         assertEquals("gretl-datenportal-afu", configuration.getJobDefinition().getJobName());
@@ -52,13 +55,14 @@ class JobDefinitionParserTest {
                 """
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 """,
                 StandardCharsets.UTF_8);
 
-        OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
+        OrganizationJobConfiguration configuration = new JobDefinitionParser()
+                .parse(yaml, "afu", teamDirectory());
 
         assertEquals("afu", configuration.getJobDefinition().getId());
     }
@@ -72,14 +76,21 @@ class JobDefinitionParserTest {
                 id: something-else
                 permissions:
                   read:
-                    - GA_Gretl_Datenportal_Read
+                    - team: datenportal-read
                   build:
-                    - GA_Gretl_Datenportal_AFU
+                    - team: datenportal-build
                 """,
                 StandardCharsets.UTF_8);
 
-        OrganizationJobConfiguration configuration = new JobDefinitionParser().parse(yaml, "afu");
+        OrganizationJobConfiguration configuration = new JobDefinitionParser()
+                .parse(yaml, "afu", teamDirectory());
 
         assertEquals("afu", configuration.getJobDefinition().getId());
+    }
+
+    private TeamDirectory teamDirectory() {
+        return new TeamDirectory(Map.of(
+                "datenportal-read", Set.of("read-user"),
+                "datenportal-build", Set.of("build-user")));
     }
 }

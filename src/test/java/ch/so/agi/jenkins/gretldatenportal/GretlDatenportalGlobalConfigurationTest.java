@@ -19,6 +19,7 @@ class GretlDatenportalGlobalConfigurationTest {
         assertTrue(configuration.isSeedJobAutoCreate());
         assertEquals("H/15 * * * *", configuration.getSeedJobCron());
         assertEquals(20, configuration.getSeedJobBuildsToKeep());
+        assertEquals("gretl-datenportal-seed-operators", configuration.getSeedJobOperatorsTeam());
     }
 
     @Test
@@ -84,5 +85,16 @@ class GretlDatenportalGlobalConfigurationTest {
         assertEquals(FormValidation.Kind.ERROR, configuration.doCheckSeedJobBuildsToKeep("0").kind);
         assertEquals(FormValidation.Kind.ERROR, configuration.doCheckSeedJobBuildsToKeep("-3").kind);
         assertEquals(FormValidation.Kind.ERROR, configuration.doCheckSeedJobBuildsToKeep("abc").kind);
+    }
+
+    @Test
+    @WithJenkins
+    void seedJobOperatorsTeamIsTrimmedAndValidated(JenkinsRule jenkinsRule) {
+        GretlDatenportalGlobalConfiguration configuration = GretlDatenportalGlobalConfiguration.get();
+
+        configuration.setSeedJobOperatorsTeam("  operators  ");
+        assertEquals("operators", configuration.getSeedJobOperatorsTeam());
+        assertEquals(FormValidation.Kind.OK, configuration.doCheckSeedJobOperatorsTeam("operators").kind);
+        assertEquals(FormValidation.Kind.ERROR, configuration.doCheckSeedJobOperatorsTeam("not valid").kind);
     }
 }

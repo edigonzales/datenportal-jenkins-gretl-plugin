@@ -25,6 +25,7 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     private boolean seedJobAutoCreate = true;
     private String seedJobCron = null;
     private int seedJobBuildsToKeep = -1;
+    private String seedJobOperatorsTeam = "gretl-datenportal-seed-operators";
 
     public GretlDatenportalGlobalConfiguration() {
         load();
@@ -126,6 +127,16 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
         save();
     }
 
+    public String getSeedJobOperatorsTeam() {
+        return seedJobOperatorsTeam == null ? "" : seedJobOperatorsTeam;
+    }
+
+    @DataBoundSetter
+    public void setSeedJobOperatorsTeam(String seedJobOperatorsTeam) {
+        this.seedJobOperatorsTeam = seedJobOperatorsTeam == null ? "" : seedJobOperatorsTeam.strip();
+        save();
+    }
+
     public boolean isTopicRepositoryConfigured() {
         return !getTopicRepositoryUrl().isBlank() || !getTopicRepositoryPath().isBlank();
     }
@@ -206,6 +217,16 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
             }
         } catch (NumberFormatException e) {
             return FormValidation.error("Must be a positive integer.");
+        }
+        return FormValidation.ok();
+    }
+
+    public FormValidation doCheckSeedJobOperatorsTeam(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        if (!value.matches("^[A-Za-z0-9][A-Za-z0-9_.-]*$")) {
+            return FormValidation.error("Use a valid team id.");
         }
         return FormValidation.ok();
     }

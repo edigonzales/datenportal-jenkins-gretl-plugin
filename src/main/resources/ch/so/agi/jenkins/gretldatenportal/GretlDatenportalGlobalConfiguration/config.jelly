@@ -25,5 +25,8 @@
         <f:entry title="Seed-Job Builds behalten" field="seedJobBuildsToKeep">
             <f:number />
         </f:entry>
+        <f:entry title="Seed-Job Operators Team" field="seedJobOperatorsTeam">
+            <f:textbox />
+        </f:entry>
     </f:section>
 </j:jelly>

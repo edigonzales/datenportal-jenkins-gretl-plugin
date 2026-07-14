@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.model.FreeStyleProject;
 import hudson.model.TopLevelItem;
+import hudson.tasks.Shell;
 import hudson.triggers.TimerTrigger;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -126,9 +127,11 @@ class GretlDatenportalSeedJobProvisionerTest {
 
         GretlDatenportalSeedJobProvisioner provisioner = new GretlDatenportalSeedJobProvisioner();
         provisioner.ensureSeedJob(jenkinsRule.jenkins, configuration);
+        seedJob(jenkinsRule).getBuildersList().add(new Shell("echo must be removed"));
         provisioner.ensureSeedJob(jenkinsRule.jenkins, configuration);
 
         FreeStyleProject seedJob = seedJob(jenkinsRule);
+        assertEquals(1, seedJob.getBuildersList().size());
         assertEquals(1, seedBuilders(seedJob).size());
         assertEquals(1, seedJob.getTriggers().size());
         assertEquals(

@@ -7,6 +7,13 @@ import java.util.Map;
 public final class JobDefinitionParser {
 
     public OrganizationJobConfiguration parse(Path yamlFile, String fallbackId) throws IOException {
+        return parse(yamlFile, fallbackId, TeamDirectory.empty());
+    }
+
+    public OrganizationJobConfiguration parse(
+            Path yamlFile,
+            String fallbackId,
+            TeamDirectory teamDirectory) throws IOException {
         Map<String, Object> root = YamlSupport.loadMap(yamlFile);
         rejectGuiConfiguration(root, "gretl-datenportal-job.yaml");
         Map<String, Object> execution = YamlSupport.asMap(root.get("execution"));
@@ -29,7 +36,7 @@ public final class JobDefinitionParser {
         NotificationConfiguration notificationConfiguration =
                 NotificationConfiguration.fromYaml(YamlSupport.asMap(root.get("notifications")));
         PermissionConfiguration permissionConfiguration =
-                PermissionConfiguration.fromYaml(YamlSupport.asMap(root.get("permissions")));
+                PermissionConfiguration.fromYaml(YamlSupport.asMap(root.get("permissions")), teamDirectory);
 
         return new OrganizationJobConfiguration(
                 jobDefinition,

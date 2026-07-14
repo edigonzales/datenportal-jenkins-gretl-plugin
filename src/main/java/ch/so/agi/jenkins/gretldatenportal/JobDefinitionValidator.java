@@ -22,10 +22,10 @@ public final class JobDefinitionValidator {
     public List<ValidationMessage> validatePermissions(PermissionConfiguration permissionConfiguration, Path path) {
         List<ValidationMessage> messages = new ArrayList<>();
         if (permissionConfiguration == null || !permissionConfiguration.hasReadRestrictions()) {
-            messages.add(error("permissions.read must contain at least one group.", path));
+            messages.add(error("permissions.read must contain at least one team.", path));
         }
         if (permissionConfiguration == null || !permissionConfiguration.hasBuildRestrictions()) {
-            messages.add(error("permissions.build must contain at least one group.", path));
+            messages.add(error("permissions.build must contain at least one team.", path));
         }
         return messages;
     }

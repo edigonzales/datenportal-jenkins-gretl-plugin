@@ -123,7 +123,7 @@ public class GretlDatenportalSeedJobProvisioner {
 
     private void configureBuilders(FreeStyleProject project) throws IOException {
         DescribableList<Builder, ?> builders = project.getBuildersList();
-        builders.removeAll(GretlDatenportalSeedBuilder.class);
+        builders.clear();
         builders.add(new GretlDatenportalSeedBuilder("", "", ""));
     }
 
