@@ -43,6 +43,11 @@ kanonischen repo-weiten Fallback, nicht beliebige Jenkinsfiles. Dadurch bleibt
 die Default-Pipeline reproduzierbar, waehrend Organisationen bei Bedarf
 weiterhin auf eine eigene Jenkinsfile ausweichen koennen.
 
+Die Pipeline wird aus dem Jenkins-internen Repository-Snapshot gerendert. Im
+`working-tree`-Modus ist das der Stand des letzten Seed-Laufs, nicht eine
+Live-Sicht auf `THEMEN_REPO_PATH`. Deshalb müssen Änderungen am Arbeitsbaum
+zuerst durch einen neuen Seed-Lauf materialisiert werden.
+
 == Weiterfuehrend
 
 * Die kanonische Rolle von `shared/Jenkinsfile` ist im Repo

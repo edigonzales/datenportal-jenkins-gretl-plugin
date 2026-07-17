@@ -6,11 +6,17 @@ final class ConfiguredTopicRepository {
     private final String legacyPath;
     private final String url;
     private final String branch;
+    private final TopicRepositoryMode mode;
 
-    private ConfiguredTopicRepository(String legacyPath, String url, String branch) {
+    private ConfiguredTopicRepository(
+            String legacyPath,
+            String url,
+            String branch,
+            TopicRepositoryMode mode) {
         this.legacyPath = blankToEmpty(legacyPath);
         this.url = blankToEmpty(url);
         this.branch = blankToEmpty(branch);
+        this.mode = mode == null ? TopicRepositoryMode.MANAGED_GIT : mode;
     }
 
     static ConfiguredTopicRepository resolve(
@@ -21,17 +27,25 @@ final class ConfiguredTopicRepository {
         String globalPath = configuration == null ? "" : configuration.getTopicRepositoryPath();
         String globalUrl = configuration == null ? "" : configuration.getTopicRepositoryUrl();
         String globalBranch = configuration == null ? "main" : configuration.getTopicRepositoryBranch();
+        TopicRepositoryMode globalMode = configuration == null
+                ? TopicRepositoryMode.MANAGED_GIT
+                : configuration.getTopicRepositoryModeValue();
 
         if (!isBlank(builderPath)) {
-            return new ConfiguredTopicRepository(builderPath, "", "");
+            return new ConfiguredTopicRepository(builderPath, "", "", TopicRepositoryMode.WORKING_TREE);
         }
         if (!isBlank(builderUrl)) {
-            return new ConfiguredTopicRepository("", builderUrl, isBlank(builderBranch) ? globalBranch : builderBranch);
+            return new ConfiguredTopicRepository(
+                    "",
+                    builderUrl,
+                    isBlank(builderBranch) ? globalBranch : builderBranch,
+                    TopicRepositoryMode.MANAGED_GIT);
         }
         if (!isBlank(globalUrl)) {
-            return new ConfiguredTopicRepository("", globalUrl, globalBranch);
+            String path = globalMode == TopicRepositoryMode.WORKING_TREE ? globalPath : "";
+            return new ConfiguredTopicRepository(path, globalUrl, globalBranch, globalMode);
         }
-        return new ConfiguredTopicRepository(globalPath, "", globalBranch);
+        return new ConfiguredTopicRepository(globalPath, "", globalBranch, globalMode);
     }
 
     static ConfiguredTopicRepository fromGlobalConfiguration(GretlDatenportalGlobalConfiguration configuration) {
@@ -48,6 +62,10 @@ final class ConfiguredTopicRepository {
 
     boolean hasGitRepository() {
         return !url.isBlank();
+    }
+
+    boolean usesWorkingTree() {
+        return mode == TopicRepositoryMode.WORKING_TREE;
     }
 
     String getUrl() {

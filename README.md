@@ -29,7 +29,7 @@ Nicht hierher gehoeren:
 
 ```bash
 cd ../jenkins-gretl-datenportal-plugin
-export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.10-tem"
+export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 ```
@@ -50,7 +50,7 @@ Wenn Jenkins bereits laeuft, ist anschliessend ein voller Restart noetig.
 
 ```bash
 cd ../jenkins-gretl-datenportal-plugin
-export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.10-tem"
+export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
@@ -59,9 +59,19 @@ cd ../datenportal-jenkins-dev
 ./bin/start.sh
 ```
 
-Danach den automatisch angelegten Job `gretl-datenportal-seed` manuell starten
-oder auf den Cron-Lauf warten und das Datenportal unter `/gretl-datenportal`
-pruefen.
+Bei einem frischen Jenkins-Home wird der automatisch angelegte Job
+`gretl-datenportal-seed` bei konfiguriertem Themenrepo einmalig automatisch
+gestartet. Bei einem bestehenden Home oder nach einem fehlgeschlagenen Erstlauf
+kann der Job weiterhin manuell gestartet werden; alternativ wartet man auf den
+Cron-Lauf. Danach das Datenportal unter `/gretl-datenportal` pruefen.
+
+Für lokale Änderungen am Themenrepo kann die Dev-Umgebung den Modus
+`THEMEN_REPO_MODE=working-tree` verwenden. Der Seed-Lauf kopiert dabei den
+externen Arbeitsbaum inklusive uncommitteter und untracked Dateien in einen
+Jenkins-internen Snapshot. Der Snapshot wird nur beim Seed-Lauf aktualisiert;
+Jobs sind weiterhin keine Live-Sicht auf das externe Arbeitsverzeichnis. Der
+Produktionsmodus `managed-git` verarbeitet dagegen den committed Stand des
+konfigurierten Branches.
 
 ## Seed-Job
 

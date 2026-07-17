@@ -86,6 +86,13 @@ Administrator-Team.
 Jenkins-Administratoren behalten ihren ueblichen Bypass fuer Lese- und
 Build-Rechte.
 
+Die fachlichen Berechtigungsentscheidungen stammen aus den Team-Referenzen im
+Themenrepo. Jenkins beziehungsweise die konfigurierte Authentisierungsquelle
+(lokal der JCasC-Realm, produktiv typischerweise Active Directory) liefert dazu
+die authentisierte Benutzer-ID und die globalen Administratorrechte. Das
+Themenrepo vergibt niemals globale Jenkins-Rechte oder
+`Overall/Administer`.
+
 == Ausgeschlossene Altkonfiguration
 
 Nicht mehr Teil des Startformulars sind:

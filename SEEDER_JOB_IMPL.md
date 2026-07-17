@@ -570,7 +570,9 @@ Aenderungen:
 - Im lokalen End-to-End-Workflow nicht mehr
   `gretl-datenportal-plugin-generator-local` nennen.
 - Neuer Text:
-  - Nach Jenkins-Start legt das Plugin den Job `gretl-datenportal-seed` an.
+  - Nach Jenkins-Start legt das Plugin den Job `gretl-datenportal-seed` an und
+    startet bei einem frischen Home mit konfiguriertem Themenrepo einmalig den
+    initialen Seed-Lauf.
   - Der Job ist aktiviert, sobald `THEMEN_REPO_URL` oder ein Pfad konfiguriert
     ist.
   - Der Job laeuft per Cron `H/15 * * * *`.
@@ -588,7 +590,7 @@ Nach Plugin-Implementierung:
 
 ```bash
 cd ../jenkins-gretl-datenportal-plugin
-export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.10-tem"
+export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 
@@ -671,9 +673,11 @@ Aenderungen:
   - per `seedJobCron` getriggert wird;
   - manuell gestartet werden kann;
   - die globale Themenrepo-Konfiguration verwendet.
-- Den alten Satz `Danach in Jenkins den Seed-Job ausfuehren` praezisieren:
-  `Danach den automatisch angelegten Job gretl-datenportal-seed manuell starten
-  oder auf den Cron-Lauf warten.`
+- Den alten Satz `Danach in Jenkins den Seed-Job ausfuehren` praezisieren: Bei
+  einem frischen Home den automatischen initialen Seed-Lauf abwarten; bei einem
+  bestehenden Home oder nach einem fehlgeschlagenen Erstlauf den automatisch
+  angelegten Job `gretl-datenportal-seed` manuell starten oder auf den Cron-Lauf
+  warten.
 - Hinweis aufnehmen, dass generierte Datenportal-Jobs weiterhin keine Live-Sicht
   auf das Repo sind.
 

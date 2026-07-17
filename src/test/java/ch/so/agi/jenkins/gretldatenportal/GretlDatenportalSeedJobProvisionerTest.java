@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Result;
 import hudson.model.TopLevelItem;
 import hudson.tasks.Shell;
 import hudson.triggers.TimerTrigger;
@@ -93,11 +95,57 @@ class GretlDatenportalSeedJobProvisionerTest {
 
     @Test
     @WithJenkins
+    void automaticallyRunsInitialSeedOnceWhenRepositoryIsConfigured(JenkinsRule jenkinsRule) throws Exception {
+        resetSeedJob(jenkinsRule);
+        Path repository = tempDir.resolve("repo");
+        GitTestSupport.initRepository(repository);
+        GitTestSupport.writeSharedJenkinsfile(repository);
+        GitTestSupport.addOrganization(repository, "afu", "ch.so.abfall.deponien");
+        GitTestSupport.commitAll(repository, "initial topics");
+
+        GretlDatenportalGlobalConfiguration configuration = configureRepository(repository, true);
+        GretlDatenportalSeedJobProvisioner provisioner = new GretlDatenportalSeedJobProvisioner();
+
+        provisioner.provisionAndScheduleInitialSeed(jenkinsRule.jenkins, configuration);
+        jenkinsRule.waitUntilNoActivity();
+
+        FreeStyleProject seedJob = seedJob(jenkinsRule);
+        FreeStyleBuild initialBuild = seedJob.getLastBuild();
+        assertNotNull(initialBuild);
+        assertEquals(Result.SUCCESS, initialBuild.getResult());
+        assertNotNull(jenkinsRule.jenkins.getItemByFullName("gretl-datenportal-afu", WorkflowJob.class));
+
+        int buildCount = seedJob.getBuilds().size();
+        provisioner.provisionAndScheduleInitialSeed(jenkinsRule.jenkins, configuration);
+        jenkinsRule.waitUntilNoActivity();
+
+        assertEquals(buildCount, seedJob.getBuilds().size());
+    }
+
+    @Test
+    @WithJenkins
+    void doesNotRunInitialSeedWithoutRepository(JenkinsRule jenkinsRule) throws Exception {
+        resetSeedJob(jenkinsRule);
+        GretlDatenportalGlobalConfiguration configuration = GretlDatenportalGlobalConfiguration.get();
+        configuration.setTopicRepositoryUrl("");
+        configuration.setTopicRepositoryPath("");
+        configuration.setSeedJobAutoCreate(true);
+
+        GretlDatenportalSeedJobProvisioner provisioner = new GretlDatenportalSeedJobProvisioner();
+        provisioner.provisionAndScheduleInitialSeed(jenkinsRule.jenkins, configuration);
+
+        FreeStyleProject seedJob = seedJob(jenkinsRule);
+        assertTrue(seedJob.isDisabled());
+        assertNull(seedJob.getLastBuild());
+    }
+
+    @Test
+    @WithJenkins
     void autoCreateFalseDoesNotCreateJob(JenkinsRule jenkinsRule) throws Exception {
         resetSeedJob(jenkinsRule);
         GretlDatenportalGlobalConfiguration configuration = configureRepository(tempDir.resolve("repo"), false);
 
-        new GretlDatenportalSeedJobProvisioner().ensureSeedJob(jenkinsRule.jenkins, configuration);
+        new GretlDatenportalSeedJobProvisioner().provisionAndScheduleInitialSeed(jenkinsRule.jenkins, configuration);
 
         assertNull(jenkinsRule.jenkins.getItem(GretlDatenportalSeedJobProvisioner.DEFAULT_SEED_JOB_NAME));
     }

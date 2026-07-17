@@ -22,6 +22,7 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     private String topicRepositoryUrl = "";
     private String topicRepositoryBranch = "main";
     private String topicRepositoryPath = "";
+    private String topicRepositoryMode = TopicRepositoryMode.MANAGED_GIT.getValue();
     private boolean seedJobAutoCreate = true;
     private String seedJobCron = null;
     private int seedJobBuildsToKeep = -1;
@@ -62,6 +63,30 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
 
     public String getTopicRepositoryUrl() {
         return topicRepositoryUrl == null ? "" : topicRepositoryUrl;
+    }
+
+    public String getTopicRepositoryMode() {
+        return getTopicRepositoryModeValue().getValue();
+    }
+
+    TopicRepositoryMode getTopicRepositoryModeValue() {
+        String configuredMode = topicRepositoryMode;
+        if (getTopicRepositoryUrl().isBlank()
+                && !getTopicRepositoryPath().isBlank()
+                && (configuredMode == null
+                        || configuredMode.isBlank()
+                        || TopicRepositoryMode.MANAGED_GIT.getValue().equalsIgnoreCase(configuredMode))) {
+            return TopicRepositoryMode.WORKING_TREE;
+        }
+        return TopicRepositoryMode.parse(configuredMode);
+    }
+
+    @DataBoundSetter
+    public void setTopicRepositoryMode(String topicRepositoryMode) {
+        this.topicRepositoryMode = topicRepositoryMode == null
+                ? TopicRepositoryMode.MANAGED_GIT.getValue()
+                : topicRepositoryMode.strip();
+        save();
     }
 
     @DataBoundSetter
@@ -193,6 +218,18 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Git branch names must not contain spaces.");
         }
         return FormValidation.ok();
+    }
+
+    public FormValidation doCheckTopicRepositoryMode(@QueryParameter String value) {
+        if (value == null || value.isBlank()) {
+            return FormValidation.ok();
+        }
+        try {
+            TopicRepositoryMode.parse(value);
+            return FormValidation.ok();
+        } catch (IllegalArgumentException ex) {
+            return FormValidation.error(ex.getMessage());
+        }
     }
 
     public FormValidation doCheckSeedJobCron(@QueryParameter String value) {

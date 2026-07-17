@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,12 +34,45 @@ final class TopicRepositoryManager {
         Objects.requireNonNull(repository, "repository");
 
         if (repository.hasGitRepository()) {
+            if (repository.usesWorkingTree()) {
+                return ensureWorkingTreeSnapshot(
+                        repository.legacyPathAsPath(), managedRepositoryPath(), update, logger);
+            }
             return ensureManagedCheckout(repository.getUrl(), repository.getBranch(), managedRepositoryPath(), update, logger);
         }
         if (repository.hasLegacyPath()) {
-            return repository.legacyPathAsPath();
+            return ensureWorkingTreeSnapshot(
+                    repository.legacyPathAsPath(), managedRepositoryPath(), update, logger);
         }
         return null;
+    }
+
+    Path ensureWorkingTreeSnapshot(
+            Path sourcePath,
+            Path checkoutPath,
+            boolean update,
+            Consumer<String> logger) throws IOException {
+        if (sourcePath == null) {
+            return null;
+        }
+
+        Path normalizedSource = sourcePath.toAbsolutePath().normalize();
+        Path normalizedCheckout = checkoutPath.toAbsolutePath().normalize();
+        if (!Files.isDirectory(normalizedSource)) {
+            throw new IOException("Working-tree topic repository directory not found: " + normalizedSource);
+        }
+
+        if (Files.isDirectory(normalizedCheckout) && !update) {
+            return normalizedCheckout;
+        }
+
+        Files.createDirectories(normalizedCheckout.getParent());
+        deleteRecursively(normalizedCheckout);
+        Files.createDirectories(normalizedCheckout);
+        log(logger, "Creating working-tree topic repository snapshot from: " + normalizedSource);
+        log(logger, "Working-tree snapshot destination: " + normalizedCheckout);
+        copyWorkingTree(normalizedSource, normalizedCheckout);
+        return normalizedCheckout;
     }
 
     Path ensureManagedCheckout(
@@ -109,6 +146,50 @@ final class TopicRepositoryManager {
         } catch (Exception ex) {
             return false;
         }
+    }
+
+    private void copyWorkingTree(Path sourcePath, Path checkoutPath) throws IOException {
+        Files.walkFileTree(sourcePath, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes)
+                    throws IOException {
+                Path relative = sourcePath.relativize(directory);
+                if (!relative.toString().isEmpty() && isExcluded(relative)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                }
+                Files.createDirectories(checkoutPath.resolve(relative));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+                Path relative = sourcePath.relativize(file);
+                if (!isExcluded(relative)) {
+                    Path target = checkoutPath.resolve(relative);
+                    Files.createDirectories(target.getParent());
+                    if (Files.isSymbolicLink(file)) {
+                        Files.deleteIfExists(target);
+                        Files.createSymbolicLink(target, Files.readSymbolicLink(file));
+                    } else {
+                        Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private boolean isExcluded(Path relativePath) {
+        for (Path part : relativePath) {
+            String name = part.toString();
+            if (name.equals(".git")
+                    || name.equals(".gradle")
+                    || name.equals("build")
+                    || name.equals(".DS_Store")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void runGit(Path workdir, Consumer<String> logger, String... args) throws IOException, InterruptedException {

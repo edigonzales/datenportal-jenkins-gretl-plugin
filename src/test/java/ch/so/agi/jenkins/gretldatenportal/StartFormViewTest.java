@@ -29,6 +29,9 @@ class StartFormViewTest {
                 StandardCharsets.UTF_8);
 
         assertTrue(jelly.contains("data-gdp-file-input=\"true\""));
+        assertTrue(jelly.contains("data-gdp-file-name=\"${field.id}\""));
+        assertTrue(jelly.contains("data-gdp-field=\"${field.id}\""));
+        assertTrue(jelly.contains("Keine Datei ausgewählt."));
         assertTrue(jelly.contains("Erlaubt: .json"));
         assertTrue(jelly.contains("Erlaubt: .csv"));
         assertFalse(jelly.contains("data-gdp-visible-param"));

@@ -18,6 +18,7 @@ Dieser Bereich beschreibt:
 * RootAction, Startformular und serverseitige Validierung;
 * Berechtigungspruefung ueber `permissions.read` und `permissions.build`;
 * verwalteten Themenrepo-Checkout und globale Plugin-Konfiguration;
+* die Modi `managed-git` und `working-tree` für die Repository-Auflösung;
 * Seed-Builder, Job-Generierung und Pipeline-Rendering.
 
 == Was gehoert nicht in diesen Bereich?
@@ -27,6 +28,10 @@ Nicht behandelt werden hier:
 * der fachliche Vertrag des Themenrepos;
 * lokale Jenkins-Betriebsdetails, JCasC und Docker-Image-Bau;
 * Endnutzerdokumentation fuer Datenlieferanten.
+
+Die technische Jenkins-Umgebung entscheidet, ob der Plugin-Checkout aus einer
+Runtime-Git-URL oder als lokaler Arbeitsbaum-Snapshot gespeist wird. Die
+Betriebsdetails dazu stehen im Repository `datenportal-jenkins-dev`.
 
 == Kurzfassung
 

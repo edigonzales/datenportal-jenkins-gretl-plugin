@@ -15,7 +15,7 @@ items:
         page: pipeline-rendering.adoc
       - title: Seed- und Job-Generierung
         page: seed-und-job-generierung.adoc
-      - title: Themenrepo-Checkout und Konfiguration
+      - title: Themenrepo-Modi, Checkout und Konfiguration
         page: checkout-und-konfiguration.adoc
 
   - title: Entwicklung

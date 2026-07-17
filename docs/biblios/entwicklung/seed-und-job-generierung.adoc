@@ -11,7 +11,8 @@ Der Jenkins-BuildStep `GretlDatenportalSeedBuilder` ist fuer die Materialisierun
 der Datenportal-Jobs zustaendig. Er:
 
 . loest das konfigurierte Themenrepo auf;
-. aktualisiert bei Git-Konfiguration den verwalteten Checkout;
+. aktualisiert bei `managed-git` den verwalteten Checkout beziehungsweise bei
+  `working-tree` den Jenkins-internen Arbeitsbaum-Snapshot;
 . scannt das Repository;
 . protokolliert Validierungsnachrichten im Build-Log;
 . bricht bei Fehlern ab;
@@ -28,6 +29,11 @@ Das Plugin provisioniert neben dem Seed-Builder auch den Seed-Job
 * laesst ihn jederzeit manuell startbar;
 * konfiguriert genau einen `GretlDatenportalSeedBuilder` mit leeren Repo-Feldern,
   sodass immer die globale Themenrepo-Konfiguration verwendet wird.
+
+Der Seed-Job verwendet den Snapshot als gemeinsame Quelle für Scan,
+Job-Generierung und spätere Pipeline-Ausführung. Er ist keine Live-Sicht auf
+`THEMEN_REPO_PATH`. Änderungen im externen Arbeitsbaum werden erst beim
+nächsten Seed-Lauf übernommen.
 
 Der Seed-Job ist ein eigener, nicht fachlicher Jenkins-Job. Seine Operatoren
 werden ueber das globale Feld `Seed-Job Operators Team` und die Teamdatei

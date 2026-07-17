@@ -12,24 +12,37 @@ Das Plugin konfiguriert global:
 * `displayName`
 * `urlName`
 * `topicRepositoryUrl`
+* `topicRepositoryMode` (`managed-git` oder `working-tree`)
 * `topicRepositoryBranch`
-* `topicRepositoryPath` als Legacy-Fallback
+* `topicRepositoryPath` als lokaler Arbeitsbaum beziehungsweise Legacy-Fallback
 * `seedJobAutoCreate` fuer die automatische Provisionierung des Seed-Jobs
 * `seedJobCron` (Default `H/15 * * * *`) fuer den Timer des Seed-Jobs
 * `seedJobBuildsToKeep` fuer die Log-Retention des Seed-Jobs
 
-Wenn eine Git-URL gesetzt ist, arbeitet das Plugin bevorzugt mit einem
-verwalteten Checkout. Nur wenn keine Git-URL vorhanden ist, greift der alte
-lokale Pfad-Fallback.
+Die Repository-Auflösung folgt dieser Reihenfolge:
 
-== Verwalteter Checkout
+. Ein im Seed-Builder gesetzter `topicRepositoryPath` erzwingt
+  `working-tree`.
+. Eine im Seed-Builder gesetzte `topicRepositoryUrl` erzwingt
+  `managed-git`.
+. Sonst gelten die globalen Werte aus Jenkins. Bei globalem
+  `topicRepositoryMode=working-tree` wird `topicRepositoryPath` verwendet; bei
+  `managed-git` wird die globale URL verwendet.
+. Ein ausschließlich gesetzter Legacy-Pfad wird aus Kompatibilitätsgründen als
+  `working-tree` behandelt.
+
+Im produktionsnahen `managed-git`-Modus zählt nur der committed Stand des
+konfigurierten Branches. Im lokalen `working-tree`-Modus werden beim Seed-Lauf
+auch uncommittete und untracked Dateien übernommen.
+
+== Verwalteter Checkout und Arbeitsbaum-Snapshot
 
 Der verwaltete Checkout liegt unter:
 
 * `JENKINS_HOME/gretl-datenportal/topic-repo`
 
-Der Update-Ablauf fuer einen bereits existierenden Checkout ist absichtlich
-streng:
+Im Modus `managed-git` ist der Update-Ablauf fuer einen bereits existierenden
+Checkout absichtlich streng:
 
 . `git remote set-url origin <url>`
 . `git fetch --prune origin`
@@ -39,18 +52,25 @@ streng:
 
 Damit entspricht der verwaltete Checkout exakt dem konfigurierten Remote-Stand.
 
+Im Modus `working-tree` wird derselbe Jenkins-interne Zielpfad als Snapshot
+verwendet. Der externe Pfad wird rekursiv kopiert; `.git`, `.gradle`, `build`
+und `.DS_Store` werden ausgeschlossen. Beim Seed-Lauf wird der Snapshot
+aktualisiert, bei reinen Seitenaufrufen oder Formularvalidierungen bleibt er
+unverändert. Der Snapshot verändert das externe Themenrepo nicht.
+
 == Auswirkungen fuer lokale Entwicklung
 
 Das Plugin verwaltet nur seinen eigenen Jenkins-internen Checkout. Das lokale
 Arbeitsverzeichnis ausserhalb von Jenkins bleibt davon unberuehrt.
 
-Fuer lokale End-to-End-Tests setzt `datenportal-jenkins-dev` standardmaessig:
+Fuer lokale End-to-End-Tests setzt `datenportal-jenkins-dev` im Default:
 
 * `topicRepositoryUrl=file://...`
 * `topicRepositoryBranch=main`
 
 Dadurch testet Jenkins gegen ein lokales Git-Repository, aber weiterhin ueber
-denselben Checkout-Mechanismus wie spaeter im Betrieb.
+denselben Checkout-Mechanismus wie spaeter im Betrieb. Für uncommittete
+Entwicklung wird stattdessen `THEMEN_REPO_MODE=working-tree` gesetzt.
 
 == Weiterfuehrend
 

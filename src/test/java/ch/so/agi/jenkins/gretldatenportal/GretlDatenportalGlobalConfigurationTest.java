@@ -20,6 +20,7 @@ class GretlDatenportalGlobalConfigurationTest {
         assertEquals("H/15 * * * *", configuration.getSeedJobCron());
         assertEquals(20, configuration.getSeedJobBuildsToKeep());
         assertEquals("gretl-datenportal-seed-operators", configuration.getSeedJobOperatorsTeam());
+        assertEquals("managed-git", configuration.getTopicRepositoryMode());
     }
 
     @Test
@@ -64,6 +65,18 @@ class GretlDatenportalGlobalConfigurationTest {
         configuration.setTopicRepositoryUrl("");
         configuration.setTopicRepositoryPath("/tmp/repo");
         assertTrue(configuration.isTopicRepositoryConfigured());
+    }
+
+    @Test
+    @WithJenkins
+    void repositoryModeIsTrimmedAndValidated(JenkinsRule jenkinsRule) {
+        GretlDatenportalGlobalConfiguration configuration = GretlDatenportalGlobalConfiguration.get();
+
+        configuration.setTopicRepositoryMode("  working-tree  ");
+        assertEquals("working-tree", configuration.getTopicRepositoryMode());
+        assertEquals(FormValidation.Kind.OK, configuration.doCheckTopicRepositoryMode("managed-git").kind);
+        assertEquals(FormValidation.Kind.OK, configuration.doCheckTopicRepositoryMode("working-tree").kind);
+        assertEquals(FormValidation.Kind.ERROR, configuration.doCheckTopicRepositoryMode("other").kind);
     }
 
     @Test

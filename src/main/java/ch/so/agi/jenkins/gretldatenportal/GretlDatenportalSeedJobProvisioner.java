@@ -5,6 +5,7 @@ import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import hudson.model.FreeStyleProject;
 import hudson.model.Item;
+import hudson.model.Queue;
 import hudson.model.TopLevelItem;
 import hudson.tasks.Builder;
 import hudson.tasks.LogRotator;
@@ -38,7 +39,7 @@ public class GretlDatenportalSeedJobProvisioner {
             return;
         }
         try {
-            new GretlDatenportalSeedJobProvisioner().ensureSeedJob(jenkins, configuration);
+            new GretlDatenportalSeedJobProvisioner().provisionAndScheduleInitialSeed(jenkins, configuration);
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.WARNING, "Could not provision GRETL Datenportal seed job.", e);
         }
@@ -50,10 +51,16 @@ public class GretlDatenportalSeedJobProvisioner {
             return;
         }
         try {
-            new GretlDatenportalSeedJobProvisioner().ensureSeedJob(jenkins, configuration);
+            new GretlDatenportalSeedJobProvisioner().provisionAndScheduleInitialSeed(jenkins, configuration);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    void provisionAndScheduleInitialSeed(
+            Jenkins jenkins, GretlDatenportalGlobalConfiguration configuration) throws IOException {
+        ensureSeedJob(jenkins, configuration);
+        scheduleInitialSeed(jenkins, configuration);
     }
 
     void ensureSeedJob(Jenkins jenkins, GretlDatenportalGlobalConfiguration configuration) throws IOException {
@@ -159,5 +166,31 @@ public class GretlDatenportalSeedJobProvisioner {
 
     private boolean hasConfiguredTopicRepository(GretlDatenportalGlobalConfiguration configuration) {
         return configuration.isTopicRepositoryConfigured();
+    }
+
+    private void scheduleInitialSeed(Jenkins jenkins, GretlDatenportalGlobalConfiguration configuration) {
+        if (!configuration.isSeedJobAutoCreate() || !hasConfiguredTopicRepository(configuration)) {
+            return;
+        }
+
+        Item item = jenkins.getItem(DEFAULT_SEED_JOB_NAME);
+        if (!(item instanceof FreeStyleProject project) || !isManagedSeedJob(project)) {
+            return;
+        }
+        if (project.isDisabled()
+                || project.getLastBuild() != null
+                || project.isBuilding()
+                || Queue.getInstance().getItem(project) != null) {
+            return;
+        }
+
+        LOGGER.log(Level.INFO, "Scheduling initial GRETL Datenportal seed job.");
+        try {
+            if (project.scheduleBuild2(0) == null) {
+                LOGGER.log(Level.WARNING, "Could not schedule initial GRETL Datenportal seed job.");
+            }
+        } catch (RuntimeException e) {
+            LOGGER.log(Level.WARNING, "Could not schedule initial GRETL Datenportal seed job.", e);
+        }
     }
 }

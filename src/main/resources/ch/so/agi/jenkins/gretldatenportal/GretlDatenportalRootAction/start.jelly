@@ -84,7 +84,7 @@
 
                                 <j:forEach var="field" items="${it.selectedGuiFields}">
                                     <j:if test="${field.id != 'ORGANISATION' and field.id != 'DATASET'}">
-                                        <div class="gdp-field">
+                                        <div class="gdp-field" data-gdp-field="${field.id}">
                                             <label class="gdp-label" for="${field.id}">
                                                 ${field.label}
                                                 <j:if test="${field.required}">

@@ -9,7 +9,7 @@ toc::[]
 
 ```bash
 cd ../jenkins-gretl-datenportal-plugin
-export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.10-tem"
+export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
 ```
@@ -23,6 +23,23 @@ cd ../datenportal-jenkins-dev
 ./bin/install-gretl-datenportal-plugin.sh
 ./bin/start.sh
 ```
+
+Für Änderungen am lokalen Themenrepo einschließlich uncommitteter und
+untracked Dateien:
+
+[source,bash]
+----
+THEMEN_REPO_MODE=working-tree ./bin/start.sh
+----
+
+Der Seed-Lauf erstellt daraus einen Snapshot unter
+`JENKINS_HOME/gretl-datenportal/topic-repo`. Das externe Themenrepo bleibt
+unverändert. Nach einer weiteren Änderung muss der Seed-Job erneut laufen; ein
+laufender Job sieht nicht automatisch den aktuellen Arbeitsbaum.
+
+Nach einer Plugin-Änderung: HPI bauen, installieren, Jenkins vollständig neu
+starten und anschließend erneut seeden. Für einen isolierten Jenkins-Controller
+steht `datenportal-jenkins-dev/bin/start-fresh.sh` zur Verfügung.
 
 Danach in Jenkins:
 
