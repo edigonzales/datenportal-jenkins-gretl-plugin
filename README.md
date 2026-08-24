@@ -32,7 +32,7 @@ Nicht hierher gehoeren:
 ### Plugin bauen
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
@@ -53,7 +53,7 @@ Wenn Jenkins bereits laeuft, ist anschliessend ein voller Restart noetig.
 ### Lokalen End-to-End-Loop fahren
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package

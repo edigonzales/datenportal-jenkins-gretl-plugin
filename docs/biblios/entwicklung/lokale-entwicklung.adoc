@@ -8,7 +8,7 @@ toc::[]
 == Plugin bauen
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package

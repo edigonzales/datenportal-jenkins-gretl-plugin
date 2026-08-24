@@ -589,7 +589,7 @@ hinzukommt, dieselben Aussagen dort einpflegen.
 Nach Plugin-Implementierung:
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 export JAVA_HOME="${JAVA21_HOME:-$HOME/.sdkman/candidates/java/current}"
 export PATH="$JAVA_HOME/bin:$PATH"
 mvn -ntp package
@@ -704,14 +704,14 @@ Die Implementierung ist fertig, wenn alle Punkte erfuellt sind:
 - Alle relevanten Tests laufen:
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 mvn -ntp test
 ```
 
 - Lokaler E2E-Loop funktioniert:
 
 ```bash
-cd ../jenkins-gretl-datenportal-plugin
+cd ../datenportal-jenkins-gretl-plugin
 mvn -ntp package
 
 cd ../datenportal-jenkins-dev
