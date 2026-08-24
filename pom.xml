@@ -18,7 +18,7 @@
 
     <name>GRETL Datenportal Jobs</name>
     <description>Jenkins plugin for GRETL Datenportal job catalogues, forms, and generated pipeline jobs.</description>
-    <url>https://github.com/sogis/jenkins-gretl-datenportal-plugin</url>
+    <url>https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin</url>
 
     <licenses>
         <license>
@@ -35,9 +35,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/sogis/jenkins-gretl-datenportal-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/sogis/jenkins-gretl-datenportal-plugin.git</developerConnection>
-        <url>https://github.com/sogis/jenkins-gretl-datenportal-plugin</url>
+        <connection>scm:git:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin.git</connection>
+        <developerConnection>scm:git:https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin.git</developerConnection>
+        <url>https://codeberg.org/edigonzales/datenportal-jenkins-gretl-plugin</url>
         <tag>${scmTag}</tag>
     </scm>
 

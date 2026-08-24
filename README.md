@@ -1,7 +1,11 @@
-# jenkins-gretl-datenportal-plugin
+# datenportal-jenkins-gretl-plugin
 
 Jenkins-Plugin fuer GRETL-Datenportal-Katalog, Startformular, Seed-Job und
 generierte Pipeline-Jobs.
+
+Das Git-Repository heisst `datenportal-jenkins-gretl-plugin`. Die technische
+Jenkins-Plugin-ID bleibt `jenkins-gretl-datenportal-plugin`; deshalb bleiben
+HPI-Dateiname und Jenkins-Asset-Pfade unverändert.
 
 ## Rolle im Gesamtsystem
 

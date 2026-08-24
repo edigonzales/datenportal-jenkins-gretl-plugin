@@ -29,7 +29,7 @@ Das Plugin uebernimmt unter anderem:
 |===
 | Repository | Rolle | Gehoert hierher?
 
-| `jenkins-gretl-datenportal-plugin`
+| `datenportal-jenkins-gretl-plugin`
 | Scanner, UI, Rechte, Seed-Builder, Job-Generierung, Rendering
 | Ja
 
