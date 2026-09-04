@@ -387,7 +387,7 @@
 }
 
 .gdp-job-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .gdp-run-row:hover,
@@ -547,19 +547,6 @@
 .gdp-upload:focus-within {
     background: #f6f9fd;
     border-color: var(--gdp-blue);
-}
-
-.gdp-upload__icon {
-    align-items: center;
-    background: #eaf3ff;
-    border-radius: 8px;
-    color: var(--gdp-blue);
-    display: flex;
-    font-size: 0.78rem;
-    font-weight: 800;
-    height: 2.4rem;
-    justify-content: center;
-    width: 2.4rem;
 }
 
 .gdp-upload__content {
@@ -911,7 +898,7 @@
     }
 
     .gdp-upload {
-        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .gdp-upload .jenkins-button {

@@ -20,7 +20,20 @@ class StartFormValidatorTest {
                                 "ORGANISATION", "afu",
                                 "DATASET", "ch.so.dataset",
                                 "SERIES_ID", "2026"),
-                        Map.of("METADATA_FILE", new UploadedFileInfo("metadata.json", 100))));
+                        Map.of("METADATA_FILE", new UploadedFileInfo("metadata.xtf", 100))));
+
+        assertFalse(hasErrors(messages));
+    }
+
+    @Test
+    void acceptsXmlMetadataUpload() {
+        List<ValidationMessage> messages = validator.validate(
+                job(false),
+                submission(
+                        Map.of(
+                                "ORGANISATION", "afu",
+                                "DATASET", "ch.so.dataset"),
+                        Map.of("METADATA_FILE", new UploadedFileInfo("metadata.xml", 100))));
 
         assertFalse(hasErrors(messages));
     }
@@ -63,14 +76,14 @@ class StartFormValidatorTest {
     }
 
     @Test
-    void rejectsNonJsonMetadataUpload() {
+    void rejectsJsonMetadataUpload() {
         List<ValidationMessage> messages = validator.validate(
                 job(false),
                 submission(
                         Map.of(
                                 "ORGANISATION", "afu",
                                 "DATASET", "ch.so.dataset"),
-                        Map.of("METADATA_FILE", new UploadedFileInfo("metadata.yaml", 100))));
+                        Map.of("METADATA_FILE", new UploadedFileInfo("metadata.json", 100))));
 
         assertTrue(messages.stream().anyMatch(message -> message.getMessage().contains("METADATA_FILE")));
     }

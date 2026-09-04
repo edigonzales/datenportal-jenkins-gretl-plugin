@@ -103,8 +103,8 @@
                                                 <j:when test="${field.type.id == 'file'}">
                                                     <j:choose>
                                                         <j:when test="${field.id == 'METADATA_FILE'}">
-                                                            <j:set var="allowedUploadText" value="Erlaubt: .json" />
-                                                            <j:set var="acceptUploadText" value=".json,application/json" />
+                                                            <j:set var="allowedUploadText" value="Erlaubt: .xtf, .xml" />
+                                                            <j:set var="acceptUploadText" value=".xtf,.xml" />
                                                         </j:when>
                                                         <j:when test="${field.id == 'DATA_FILE'}">
                                                             <j:set var="allowedUploadText" value="Erlaubt: .csv" />
@@ -116,7 +116,6 @@
                                                         </j:otherwise>
                                                     </j:choose>
                                                     <label class="gdp-upload" for="${field.id}">
-                                                        <span class="gdp-upload__icon" aria-hidden="true">UP</span>
                                                         <span class="gdp-upload__content">
                                                             <strong>Datei auswählen</strong>
                                                             <span>

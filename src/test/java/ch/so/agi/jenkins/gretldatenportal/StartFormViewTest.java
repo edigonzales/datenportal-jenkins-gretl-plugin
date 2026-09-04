@@ -40,8 +40,11 @@ class StartFormViewTest {
         assertTrue(jelly.contains("data-gdp-file-name=\"${field.id}\""));
         assertTrue(jelly.contains("data-gdp-field=\"${field.id}\""));
         assertTrue(jelly.contains("Keine Datei ausgewählt."));
-        assertTrue(jelly.contains("Erlaubt: .json"));
+        assertTrue(jelly.contains("Erlaubt: .xtf, .xml"));
+        assertTrue(jelly.contains("acceptUploadText\" value=\".xtf,.xml"));
         assertTrue(jelly.contains("Erlaubt: .csv"));
+        assertFalse(jelly.contains("Erlaubt: .json"));
+        assertFalse(jelly.contains("gdp-upload__icon"));
         assertFalse(jelly.contains("data-gdp-visible-param"));
         assertFalse(jelly.contains("data-gdp-required-param"));
         assertFalse(jelly.contains("CONFIRM_PRODUCTION"));

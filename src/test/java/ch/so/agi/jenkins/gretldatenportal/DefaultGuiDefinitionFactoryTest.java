@@ -26,10 +26,12 @@ class DefaultGuiDefinitionFactoryTest {
     }
 
     @Test
-    void restrictsDefaultUploadsToJsonAndCsv() {
+    void restrictsDefaultUploadsToXtfXmlAndCsv() {
         GuiDefinition gui = factory.create(false);
 
-        assertTrue(field(gui, "METADATA_FILE").getAllowedExtensions().contains("json"));
+        assertTrue(field(gui, "METADATA_FILE").getAllowedExtensions().contains("xtf"));
+        assertTrue(field(gui, "METADATA_FILE").getAllowedExtensions().contains("xml"));
+        assertFalse(field(gui, "METADATA_FILE").getAllowedExtensions().contains("json"));
         assertFalse(field(gui, "METADATA_FILE").getAllowedExtensions().contains("yaml"));
         assertTrue(field(gui, "DATA_FILE").getAllowedExtensions().contains("csv"));
         assertFalse(field(gui, "DATA_FILE").getAllowedExtensions().contains("xlsx"));

@@ -34,7 +34,7 @@ public final class DefaultGuiDefinitionFactory {
                 null,
                 null,
                 "stashedFile",
-                List.of("json"),
+                List.of("xtf", "xml"),
                 10));
         fields.add(new GuiFieldDefinition(
                 "DATA_FILE",

@@ -20,7 +20,7 @@ public final class StartFormValidator {
         }
 
         if (submission.hasFile("METADATA_FILE")) {
-            validateFile("METADATA_FILE", submission.file("METADATA_FILE"), List.of("json"), METADATA_FILE_MAX_BYTES, messages);
+            validateFile("METADATA_FILE", submission.file("METADATA_FILE"), List.of("xtf", "xml"), METADATA_FILE_MAX_BYTES, messages);
         }
         if (submission.hasFile("DATA_FILE")) {
             validateFile("DATA_FILE", submission.file("DATA_FILE"), List.of("csv"), DATA_FILE_MAX_BYTES, messages);
