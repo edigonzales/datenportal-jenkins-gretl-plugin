@@ -16,6 +16,9 @@ class RootActionViewAssetsTest {
 
         assertTrue(jelly.contains("gretl-datenportal.css"));
         assertTrue(jelly.contains("gretl-datenportal.js"));
+        assertTrue(jelly.contains("<h1>${it.displayName}</h1>"));
+        assertFalse(jelly.contains("<p class=\"gdp-eyebrow\">GRETL</p>"));
+        assertFalse(jelly.contains("Ausgeführte Datenportal-Jobs prüfen."));
         assertTrue(jelly.contains("Ausgeführte Jobs"));
         assertTrue(jelly.contains("data-gdp-filter-list=\"runs\""));
         assertTrue(jelly.contains("data-gdp-filter-control=\"organization\""));
@@ -29,10 +32,19 @@ class RootActionViewAssetsTest {
         String jelly = readView("jobs.jelly");
 
         assertTrue(jelly.contains("Jobs starten"));
+        assertTrue(jelly.contains(
+                "href=\"${rootURL}/${it.urlName}\">Zurück zur Datenportal-Startseite</a>"));
+        assertTrue(jelly.contains("Pro Organisationseinheit gibt es einen GRETL-Datenportal-Job."));
         assertTrue(jelly.contains("gdp-job-list"));
+        assertTrue(jelly.contains("gdp-job-row"));
         assertTrue(jelly.contains("start?organization=${job.organization}\""));
         assertFalse(jelly.contains("&amp;dataset="));
         assertFalse(jelly.contains("${job.firstDatasetId}"));
+        assertFalse(jelly.contains("<p class=\"gdp-eyebrow\">GRETL</p>"));
+        assertFalse(jelly.contains("gdp-panel gdp-job-overview"));
+        assertFalse(jelly.contains("gdp-job-card__icon"));
+        assertFalse(jelly.contains("${job.description}"));
+        assertFalse(jelly.contains("Datenportal-Ausführungen"));
     }
 
     @Test

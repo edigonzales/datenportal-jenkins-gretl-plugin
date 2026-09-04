@@ -9,14 +9,13 @@
             <div class="gdp-page">
                 <div class="gdp-page-header gdp-page-header--with-actions">
                     <div>
-                        <a class="gdp-back-link" href="${rootURL}/${it.urlName}">Zurück zu ausgeführten Jobs</a>
-                        <p class="gdp-eyebrow">GRETL</p>
+                        <a class="gdp-back-link" href="${rootURL}/${it.urlName}">Zurück zur Datenportal-Startseite</a>
                         <h1>Jobs starten</h1>
                         <p class="gdp-page-description">Pro Organisationseinheit gibt es einen GRETL-Datenportal-Job.</p>
                     </div>
                 </div>
 
-                <section class="gdp-panel gdp-job-overview">
+                <section>
                     <j:choose>
                         <j:when test="${jobSummaries.isEmpty()}">
                             <div class="gdp-empty-state">
@@ -28,7 +27,6 @@
                             <div class="gdp-job-list">
                                 <j:forEach var="job" items="${jobSummaries}">
                                     <article class="gdp-job-row">
-                                        <div class="gdp-job-card__icon" aria-hidden="true">G</div>
                                         <div class="gdp-job-row__main">
                                             <div class="gdp-run-row__title">
                                                 <span>${job.title}</span>
@@ -36,7 +34,6 @@
                                                     <span class="gdp-badge" data-gdp-status="${job.status}">${job.statusLabel}</span>
                                                 </j:if>
                                             </div>
-                                            <p>${job.description}</p>
                                             <div class="gdp-run-row__meta">
                                                 <span>Organisation: <span>${job.organization}</span></span>
                                                 <span>Jobname: <span>${job.jobName}</span></span>

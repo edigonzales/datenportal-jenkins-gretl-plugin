@@ -337,66 +337,6 @@
     grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
 }
 
-.gdp-job-card {
-    align-items: flex-start;
-    background: #fff;
-    border: 1px solid var(--gdp-border);
-    border-radius: var(--gdp-radius);
-    display: grid;
-    gap: 0.9rem;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    min-width: 0;
-    padding: 1rem;
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
-}
-
-.gdp-job-card:hover {
-    border-color: #b7c2d0;
-    box-shadow: var(--gdp-shadow);
-}
-
-.gdp-job-card__icon {
-    align-items: center;
-    background: var(--gdp-accent-soft);
-    border: 1px solid #ffd0d2;
-    border-radius: 8px;
-    color: var(--gdp-accent);
-    display: flex;
-    font-weight: 800;
-    height: 2.75rem;
-    justify-content: center;
-    width: 2.75rem;
-}
-
-.gdp-job-card__body {
-    min-width: 0;
-}
-
-.gdp-job-card__title-row {
-    align-items: flex-start;
-    display: flex;
-    gap: 0.75rem;
-    justify-content: space-between;
-}
-
-.gdp-job-card h3 {
-    font-size: 1.08rem;
-    line-height: 1.3;
-    margin: 0;
-}
-
-.gdp-job-card p {
-    color: var(--gdp-muted);
-    line-height: 1.4;
-    margin: 0.25rem 0 0;
-}
-
-.gdp-job-card__actions {
-    align-self: center;
-    display: flex;
-    justify-content: flex-end;
-}
-
 .gdp-meta-list,
 .gdp-preview-list,
 .gdp-run-facts,
@@ -997,19 +937,6 @@
         border-bottom: 0;
     }
 
-    .gdp-job-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .gdp-job-card {
-        grid-template-columns: auto minmax(0, 1fr);
-    }
-
-    .gdp-job-card__actions {
-        grid-column: 1 / -1;
-        justify-content: flex-start;
-    }
-
     .gdp-upload {
         grid-template-columns: auto minmax(0, 1fr);
     }
@@ -1027,10 +954,6 @@
     .gdp-run-row,
     .gdp-job-row {
         grid-template-columns: 1fr;
-    }
-
-    .gdp-job-card__icon {
-        display: none;
     }
 
     .gdp-run-row__time,

@@ -11,9 +11,7 @@
             <div class="gdp-page">
                 <div class="gdp-page-header gdp-page-header--with-actions">
                     <div>
-                        <p class="gdp-eyebrow">GRETL</p>
                         <h1>${it.displayName}</h1>
-                        <p class="gdp-page-description">Ausgeführte Datenportal-Jobs prüfen.</p>
                     </div>
                     <div class="gdp-header-actions">
                         <a class="jenkins-button jenkins-button--primary" href="${rootURL}/${it.urlName}/jobs">Jobs starten</a>
