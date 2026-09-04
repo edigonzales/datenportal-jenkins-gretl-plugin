@@ -20,6 +20,14 @@ class StartFormViewTest {
         assertTrue(jelly.contains("data-gdp-dataset-selector=\"true\""));
         assertTrue(jelly.contains("data-gdp-dataset-start-url=\"${rootURL}/${it.urlName}/start?organization=${organization.id}&amp;dataset="));
         assertTrue(jelly.contains("Bitte Datensatz auswählen"));
+        assertTrue(jelly.contains("class=\"gdp-start-form\""));
+        assertTrue(jelly.contains("name=\"DATASET\""));
+        assertTrue(jelly.contains(">Job starten</button>"));
+        assertFalse(jelly.contains("gdp-eyebrow"));
+        assertFalse(jelly.contains("gdp-header-actions"));
+        assertFalse(jelly.contains("gdp-badge--info"));
+        assertFalse(jelly.contains("${organization.defaultJobName}"));
+        assertFalse(jelly.contains("Datensatz auswählen, Parameter setzen und den Jenkins Build starten."));
     }
 
     @Test

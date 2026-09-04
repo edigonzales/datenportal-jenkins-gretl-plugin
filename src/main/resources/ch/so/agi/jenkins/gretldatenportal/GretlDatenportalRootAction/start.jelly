@@ -13,22 +13,17 @@
                     <j:when test="${organization == null}">
                         <div class="gdp-page-header">
                             <div>
-                                <p class="gdp-eyebrow">GRETL</p>
                                 <h1>Job starten</h1>
                                 <p class="gdp-page-description">Organisation wurde nicht gefunden.</p>
                             </div>
                         </div>
                     </j:when>
                     <j:otherwise>
-                        <div class="gdp-page-header gdp-page-header--with-actions">
+                        <div class="gdp-page-header">
                             <div>
                                 <a class="gdp-back-link" href="${rootURL}/${it.urlName}/jobs">Zurück zu Jobs starten</a>
-                                <p class="gdp-eyebrow">${organization.id}</p>
                                 <h1>${organization.jobDefinition.title}</h1>
                                 <p class="gdp-page-description">${organization.jobDefinition.description}</p>
-                            </div>
-                            <div class="gdp-header-actions">
-                                <span class="gdp-badge gdp-badge--info">${organization.defaultJobName}</span>
                             </div>
                         </div>
 
@@ -36,11 +31,6 @@
                             <input type="hidden" name="ORGANISATION" value="${organization.id}" />
 
                             <section class="gdp-panel gdp-form-panel">
-                                <div class="gdp-panel__header">
-                                    <h2>Job starten</h2>
-                                    <p>Datensatz auswählen, Parameter setzen und den Jenkins Build starten.</p>
-                                </div>
-
                                 <div class="gdp-field gdp-field--required" data-gdp-field="DATASET" data-gdp-required-base="true">
                                     <label class="gdp-label" for="DATASET">
                                         Datensatz <span aria-hidden="true">*</span>
