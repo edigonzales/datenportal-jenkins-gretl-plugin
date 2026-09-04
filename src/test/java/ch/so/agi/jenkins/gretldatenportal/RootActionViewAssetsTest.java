@@ -17,8 +17,15 @@ class RootActionViewAssetsTest {
         assertTrue(jelly.contains("gretl-datenportal.css"));
         assertTrue(jelly.contains("gretl-datenportal.js"));
         assertTrue(jelly.contains("<h1>${it.displayName}</h1>"));
+        assertTrue(jelly.contains("<div class=\"gdp-header-actions gdp-header-actions--below-title\">"));
+        assertTrue(jelly.contains(
+                "<h1>${it.displayName}</h1>\n                        <div class=\"gdp-header-actions gdp-header-actions--below-title\">"));
         assertFalse(jelly.contains("<p class=\"gdp-eyebrow\">GRETL</p>"));
         assertFalse(jelly.contains("Ausgeführte Datenportal-Jobs prüfen."));
+        assertFalse(jelly.contains("Alle Builds der GRETL-Datenportal-Jobs, neueste Ausführung zuerst."));
+        assertFalse(jelly.contains("gdp-summary"));
+        assertFalse(jelly.contains("Themen-Repo"));
+        assertFalse(jelly.contains("repositoryPathString"));
         assertTrue(jelly.contains("Ausgeführte Jobs"));
         assertTrue(jelly.contains("data-gdp-filter-list=\"runs\""));
         assertTrue(jelly.contains("data-gdp-filter-control=\"organization\""));

@@ -65,6 +65,11 @@
     justify-content: flex-end;
 }
 
+.gdp-header-actions--below-title {
+    justify-content: flex-start;
+    margin-top: 0.8rem;
+}
+
 .gdp-eyebrow {
     color: var(--gdp-accent);
     font-size: 0.75rem;
@@ -84,38 +89,6 @@
 .gdp-back-link:hover {
     color: var(--gdp-blue);
     text-decoration: underline;
-}
-
-.gdp-summary {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    margin: 0 0 1.5rem;
-}
-
-.gdp-summary-card {
-    background: var(--gdp-panel);
-    border: 1px solid var(--gdp-border);
-    border-radius: var(--gdp-radius);
-    box-shadow: var(--gdp-shadow);
-    min-width: 0;
-    padding: 1rem;
-}
-
-.gdp-summary-card strong {
-    display: block;
-    font-size: 1.05rem;
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-}
-
-.gdp-summary-label {
-    color: var(--gdp-muted);
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 700;
-    margin-bottom: 0.35rem;
-    text-transform: uppercase;
 }
 
 .gdp-panel {

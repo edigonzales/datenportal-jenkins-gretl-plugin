@@ -9,23 +9,12 @@
             <j:set var="executedRuns" value="${it.executedRuns}" />
 
             <div class="gdp-page">
-                <div class="gdp-page-header gdp-page-header--with-actions">
+                <div class="gdp-page-header">
                     <div>
                         <h1>${it.displayName}</h1>
-                    </div>
-                    <div class="gdp-header-actions">
-                        <a class="jenkins-button jenkins-button--primary" href="${rootURL}/${it.urlName}/jobs">Jobs starten</a>
-                    </div>
-                </div>
-
-                <div class="gdp-summary">
-                    <div class="gdp-summary-card">
-                        <span class="gdp-summary-label">Themen-Repo</span>
-                        <strong>${scanResult.repositoryPathString}</strong>
-                    </div>
-                    <div class="gdp-summary-card">
-                        <span class="gdp-summary-label">Ausgeführte Jobs</span>
-                        <strong>${executedRuns.size()}</strong>
+                        <div class="gdp-header-actions gdp-header-actions--below-title">
+                            <a class="jenkins-button jenkins-button--primary" href="${rootURL}/${it.urlName}/jobs">Jobs starten</a>
+                        </div>
                     </div>
                 </div>
 
@@ -59,7 +48,6 @@
                     <div class="gdp-panel__header gdp-panel__header--split">
                         <div>
                             <h2>Ausgeführte Jobs</h2>
-                            <p>Alle Builds der GRETL-Datenportal-Jobs, neueste Ausführung zuerst.</p>
                         </div>
                     </div>
 
