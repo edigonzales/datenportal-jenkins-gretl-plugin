@@ -12,7 +12,6 @@
                     <j:when test="${details == null}">
                         <div class="gdp-page-header">
                             <div>
-                                <p class="gdp-eyebrow">GRETL</p>
                                 <h1>Jobstatus</h1>
                                 <p class="gdp-page-description">Build wurde nicht gefunden.</p>
                             </div>
@@ -39,8 +38,7 @@
 
                             <div class="gdp-page-header gdp-page-header--with-actions">
                                 <div>
-                                    <a class="gdp-back-link" href="${rootURL}/${it.urlName}">Zurück zur Übersicht</a>
-                                    <p class="gdp-eyebrow">Jobstatus</p>
+                                    <a class="gdp-back-link" href="${rootURL}/${it.urlName}">Zurück zur Datenportal-Startseite</a>
                                     <h1 data-gdp-run-title="true">${details.headline}</h1>
                                     <p class="gdp-page-description">Read-only Übersicht zu Status, Parametern, Artefakten und Logausgabe.</p>
                                 </div>

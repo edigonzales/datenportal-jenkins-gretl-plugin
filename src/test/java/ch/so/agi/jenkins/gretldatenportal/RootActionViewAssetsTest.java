@@ -62,6 +62,9 @@ class RootActionViewAssetsTest {
         assertTrue(jelly.contains("gretl-datenportal.css"));
         assertTrue(jelly.contains("gretl-datenportal.js"));
         assertTrue(jelly.contains("Jobstatus"));
+        assertTrue(jelly.contains(
+                "href=\"${rootURL}/${it.urlName}\">Zurück zur Datenportal-Startseite</a>"));
+        assertFalse(jelly.contains("gdp-eyebrow"));
         assertTrue(jelly.contains("data-gdp-status=\"${details.status}\""));
         assertTrue(jelly.contains("data-gdp-run-status-view=\"true\""));
         assertTrue(jelly.contains("data-gdp-run-status-url=\"true\""));
