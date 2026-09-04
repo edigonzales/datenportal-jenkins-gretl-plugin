@@ -26,8 +26,9 @@ class RootActionViewAssetsTest {
         assertFalse(jelly.contains("gdp-summary"));
         assertFalse(jelly.contains("Themen-Repo"));
         assertFalse(jelly.contains("repositoryPathString"));
-        assertTrue(jelly.contains("Ausgeführte Jobs"));
-        assertTrue(jelly.contains("data-gdp-filter-list=\"runs\""));
+        assertFalse(jelly.contains("Ausgeführte Jobs"));
+        assertFalse(jelly.contains("gdp-panel gdp-run-overview"));
+        assertTrue(jelly.contains("<section class=\"gdp-run-overview\" data-gdp-filter-list=\"runs\">"));
         assertTrue(jelly.contains("data-gdp-filter-control=\"organization\""));
         assertTrue(jelly.contains("data-gdp-filter-control=\"dataset\""));
         assertTrue(jelly.contains("href=\"${rootURL}/${it.urlName}/jobs\""));
