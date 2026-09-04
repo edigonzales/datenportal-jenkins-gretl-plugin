@@ -1,9 +1,11 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
 import hudson.console.ConsoleNote;
+import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.Queue;
 import hudson.model.Run;
+import io.jenkins.plugins.file_parameters.AbstractFileParameterValue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -117,12 +119,15 @@ public final class RunDetails {
         return queueItem == null ? "–" : queueItem.getInQueueForString();
     }
 
-    public List<?> getParameters() {
+    public List<RunParameter> getParameters() {
         if (!hasRun()) {
             return List.of();
         }
         ParametersAction action = run.getAction(ParametersAction.class);
-        return action == null ? List.of() : action.getParameters();
+        if (action == null) {
+            return List.of();
+        }
+        return action.getParameters().stream().map(RunParameter::from).toList();
     }
 
     public List<? extends Run.Artifact> getArtifacts() {
@@ -207,16 +212,47 @@ public final class RunDetails {
 
     private JSONArray jsonParameters() {
         JSONArray parameters = new JSONArray();
-        for (Object parameterObject : getParameters()) {
-            if (!(parameterObject instanceof hudson.model.ParameterValue parameter)) {
-                continue;
-            }
+        for (RunParameter parameter : getParameters()) {
             JSONObject parameterJson = new JSONObject();
             parameterJson.element("name", parameter.getName());
-            parameterJson.element("value", parameter.getValue() == null ? "" : parameter.getValue().toString());
+            parameterJson.element("value", parameter.getValue());
             parameters.add(parameterJson);
         }
         return parameters;
+    }
+
+    public static final class RunParameter {
+        private final String name;
+        private final String value;
+
+        private RunParameter(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        static RunParameter from(ParameterValue parameter) {
+            return new RunParameter(parameter.getName(), displayValue(parameter));
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        private static String displayValue(ParameterValue parameter) {
+            if (parameter instanceof AbstractFileParameterValue fileParameter) {
+                return nullToEmpty(fileParameter.getFilename());
+            }
+            Object value = parameter.getValue();
+            return value == null ? "" : value.toString();
+        }
+
+        private static String nullToEmpty(String value) {
+            return value == null ? "" : value;
+        }
     }
 
     private JSONArray jsonArtifacts(String rootUrl) {
