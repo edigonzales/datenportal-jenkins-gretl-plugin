@@ -63,7 +63,8 @@ permissions:
 
 Dabei gilt:
 
-* `permissions.read` steuert Sichtbarkeit in Katalog und Joblisten;
+* `permissions.read` liefert die Vorgabe für die Job-ACL; sichtbar ist ein Job
+  nur, wenn Jenkins dem aktuellen Benutzer effektiv `Item/Read` gewährt;
 * `permissions.build` steuert, ob ein Benutzer den generierten Job starten darf.
 * Ein Benutzer mit `build` erhält auch `read`, damit der Job in Jenkins und im
   Startformular sichtbar ist.

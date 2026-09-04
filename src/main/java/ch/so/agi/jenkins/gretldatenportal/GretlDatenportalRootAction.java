@@ -97,7 +97,7 @@ public class GretlDatenportalRootAction implements RootAction {
 
     public List<OrganizationUnit> getOrganizations() {
         return getScanResult().getOrganizations().stream()
-                .filter(this::canReadOrganization)
+                .filter(organization -> getVisibleWorkflowJob(organization) != null)
                 .toList();
     }
 
@@ -114,10 +114,8 @@ public class GretlDatenportalRootAction implements RootAction {
     public List<DatenportalRunSummary> getExecutedRuns() {
         List<DatenportalRunSummary> runs = new ArrayList<>();
         for (OrganizationUnit organization : getOrganizations()) {
-            WorkflowJob workflowJob = Jenkins.get().getItemByFullName(
-                    organization.getJobDefinition().getJobName(),
-                    WorkflowJob.class);
-            if (workflowJob == null || !workflowJob.hasPermission(Item.READ)) {
+            WorkflowJob workflowJob = getVisibleWorkflowJob(organization);
+            if (workflowJob == null) {
                 continue;
             }
             for (WorkflowRun run : workflowJob.getBuilds()) {
@@ -199,8 +197,17 @@ public class GretlDatenportalRootAction implements RootAction {
             rsp.sendError(404, "Unknown organization.");
             return;
         }
-        if (!canReadOrganization(organization)) {
-            rsp.sendError(403, "You do not have permission to read this GRETL Datenportal organization.");
+        WorkflowJob workflowJob = getVisibleWorkflowJob(organization);
+        if (workflowJob == null) {
+            Item item = Jenkins.get().getItem(organization.getJobDefinition().getJobName());
+            if (!(item instanceof WorkflowJob)) {
+                rsp.sendError(
+                        404,
+                        "Generated Pipeline job '" + organization.getJobDefinition().getJobName()
+                                + "' does not exist yet. Run the GRETL Datenportal seed job first.");
+            } else {
+                rsp.sendError(403, "You do not have permission to read this GRETL Datenportal organization.");
+            }
             return;
         }
         DatasetEntry dataset = organization.getDataset(req.getParameter("DATASET"));
@@ -217,14 +224,6 @@ public class GretlDatenportalRootAction implements RootAction {
             return;
         }
 
-        Item item = Jenkins.get().getItem(organization.getJobDefinition().getJobName());
-        if (!(item instanceof WorkflowJob workflowJob)) {
-            rsp.sendError(
-                    404,
-                    "Generated Pipeline job '" + organization.getJobDefinition().getJobName()
-                            + "' does not exist yet. Run the GRETL Datenportal seed job first.");
-            return;
-        }
         workflowJob.checkPermission(Item.BUILD);
         if (!canBuildOrganization(organization)) {
             rsp.sendError(403, "You do not have permission to build this GRETL Datenportal organization.");
@@ -275,7 +274,7 @@ public class GretlDatenportalRootAction implements RootAction {
 
     private OrganizationUnit getOrganization(String organizationId) {
         OrganizationUnit organization = findOrganization(organizationId);
-        if (organization == null || !canReadOrganization(organization)) {
+        if (organization == null || getVisibleWorkflowJob(organization) == null) {
             return null;
         }
         return organization;
@@ -291,18 +290,18 @@ public class GretlDatenportalRootAction implements RootAction {
                 .orElse(null);
     }
 
-    private boolean canReadOrganization(OrganizationUnit organization) {
-        if (Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-            return true;
-        }
-        return organization.getPermissionConfiguration().canRead(authentication());
-    }
-
     private boolean canBuildOrganization(OrganizationUnit organization) {
         if (Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
             return true;
         }
         return organization.getPermissionConfiguration().canBuild(authentication());
+    }
+
+    private WorkflowJob getVisibleWorkflowJob(OrganizationUnit organization) {
+        if (organization == null) {
+            return null;
+        }
+        return getReadableWorkflowJob(organization.getJobDefinition().getJobName());
     }
 
     private Authentication authentication() {
