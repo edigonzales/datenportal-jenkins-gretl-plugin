@@ -1,5 +1,6 @@
 package ch.so.agi.jenkins.gretldatenportal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,6 +23,10 @@ class DefaultGuiDefinitionFactoryTest {
     @Test
     void rendersSeriesIdOnlyForSeriesDatasets() {
         assertTrue(hasField(factory.create(true), "SERIES_ID"));
+        GuiFieldDefinition issue = field(factory.create(true), "SERIES_ID");
+        assertEquals("Ausgabe", issue.getLabel());
+        assertFalse(issue.isRequired());
+        assertTrue(issue.getDescription().contains("Nur bei Datenlieferung erforderlich"));
         assertFalse(hasField(factory.create(false), "SERIES_ID"));
     }
 

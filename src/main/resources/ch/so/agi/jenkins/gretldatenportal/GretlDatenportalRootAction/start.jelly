@@ -77,6 +77,9 @@
                                         <div class="gdp-field" data-gdp-field="${field.id}">
                                             <label class="gdp-label" for="${field.id}">
                                                 ${field.label}
+                                                <j:if test="${field.id == 'SERIES_ID'}">
+                                                    <span data-gdp-issue-required="true" hidden="hidden" aria-hidden="true">*</span>
+                                                </j:if>
                                                 <j:if test="${field.required}">
                                                     <span aria-hidden="true">*</span>
                                                 </j:if>

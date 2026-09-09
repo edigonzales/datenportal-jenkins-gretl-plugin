@@ -18,7 +18,14 @@ Unterstuetzte Felder:
 * `METADATA_FILE`
 * `DATA_FILE`
 * `COMMENT`
-* `SERIES_ID` nur fuer Datensaetze, deren Metadatenwurzel `DatasetSeries` ist
+* `SERIES_ID` (Ausgabe) nur fuer Datensaetze, deren Metadatenwurzel `DatasetSeries` ist
+
+Bei Serien erscheint das Freitextfeld «Ausgabe» erst, sobald eine Datendatei
+(`DATA_FILE`) ausgewählt ist, und wird dann zum Pflichtfeld. Wird die Datei
+entfernt oder das Formular zurückgesetzt, wird die Ausgabe geleert,
+ausgeblendet und deaktiviert. Noch nicht erfasste Ausgaben sind zulässig.
+Ohne JavaScript bleibt das Feld zugänglich; die bedingte Pflicht wird auf dem
+Server geprüft.
 
 == Serverseitige Validierung
 
@@ -27,7 +34,14 @@ Vor dem Start eines Jobs prueft das Plugin unter anderem:
 * die Organisation existiert;
 * der Datensatz existiert;
 * die Organisation darf gelesen werden;
-* die Upload-Regeln sind erfuellt.
+* die Upload-Regeln sind erfuellt;
+* bei einer Datenlieferung zu einer Serie ist `SERIES_ID` nicht leer.
+
+Reine Metadatenlieferungen benötigen keine Ausgabe und betreffen das gesamte
+Serien-Datenblatt. Ein trotzdem übermittelter Ausgabewert wird vom gemeinsamen
+Jenkinsfile nicht an Gradle weitergereicht; auch direkte Gradle-Aufrufe
+ignorieren `seriesId`, wenn keine Datendatei vorliegt. Die technischen
+Parameternamen `SERIES_ID` und `seriesId` bleiben erhalten.
 
 Mindestens eine der beiden Upload-Dateien muss vorhanden sein:
 

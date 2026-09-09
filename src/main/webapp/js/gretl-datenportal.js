@@ -59,8 +59,30 @@
                 });
             });
 
+            var dataInput = form.querySelector('[name="DATA_FILE"]');
+            var issueField = form.querySelector('[data-gdp-field="SERIES_ID"]');
+            var issueInput = issueField ? issueField.querySelector('[name="SERIES_ID"]') : null;
+            var issueRequiredMark = issueField ? issueField.querySelector('[data-gdp-issue-required]') : null;
+
+            function updateIssueField() {
+                if (!issueInput) {
+                    return;
+                }
+                var hasData = !!(dataInput && dataInput.files && dataInput.files.length > 0);
+                setHidden(issueField, !hasData);
+                setHidden(issueRequiredMark, !hasData);
+                issueInput.disabled = !hasData;
+                issueInput.required = hasData;
+                issueInput.setAttribute("aria-required", hasData ? "true" : "false");
+                if (!hasData) {
+                    issueInput.value = "";
+                }
+            }
+
+            updateIssueField();
             all(form, "[data-gdp-file-input]").forEach(function (input) {
                 input.addEventListener("change", function () {
+                    updateIssueField();
                     var field = closest(input, "[data-gdp-field]");
                     var fileName = field ? field.querySelector("[data-gdp-file-name]") : null;
                     if (fileName) {
@@ -72,6 +94,7 @@
             });
             form.addEventListener("reset", function () {
                 window.setTimeout(function () {
+                    updateIssueField();
                     all(form, "[data-gdp-file-name]").forEach(function (target) {
                         target.textContent = "Keine Datei ausgewählt.";
                     });

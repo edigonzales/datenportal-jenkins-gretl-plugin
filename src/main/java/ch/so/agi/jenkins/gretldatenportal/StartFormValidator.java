@@ -29,8 +29,9 @@ public final class StartFormValidator {
         if (!submission.hasFile("METADATA_FILE") && !submission.hasFile("DATA_FILE")) {
             messages.add(error("At least one of METADATA_FILE or DATA_FILE is required."));
         }
-        if (dataset.getDefinition().isSeries() && isBlank(submission.value("SERIES_ID"))) {
-            messages.add(error("SERIES_ID is required for series datasets."));
+        if (dataset.getDefinition().isSeries() && submission.hasFile("DATA_FILE")
+                && isBlank(submission.value("SERIES_ID"))) {
+            messages.add(error("Ausgabe (SERIES_ID) is required when supplying data for a series."));
         }
         return messages;
     }

@@ -114,7 +114,7 @@ public final class GretlDatenportalJobGenerator {
         parameters.add(new StashedFileParameterDefinition("METADATA_FILE"));
         parameters.add(new StashedFileParameterDefinition("DATA_FILE"));
         parameters.add(new TextParameterDefinition("COMMENT", "", "Kommentar"));
-        parameters.add(new StringParameterDefinition("SERIES_ID", "", "Serie"));
+        parameters.add(new StringParameterDefinition("SERIES_ID", "", "Ausgabe, z. B. 2025; nur bei Datenlieferungen zu einer Serie erforderlich"));
         return parameters;
     }
 }

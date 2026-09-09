@@ -53,7 +53,7 @@ public final class DefaultGuiDefinitionFactory {
                 100));
         fields.add(field("COMMENT", "Kommentar", ParameterType.TEXT, false, "", false));
         if (includeSeriesId) {
-            fields.add(field("SERIES_ID", "Serie", ParameterType.STRING, true, "", false));
+            fields.add(field("SERIES_ID", "Ausgabe", ParameterType.STRING, false, "", false));
         }
         return new GuiDefinition(fields);
     }
@@ -68,7 +68,9 @@ public final class DefaultGuiDefinitionFactory {
         return new GuiFieldDefinition(
                 id,
                 label,
-                "",
+                "SERIES_ID".equals(id)
+                        ? "Bezeichnung der gelieferten Ausgabe, z. B. 2025. Nur bei Datenlieferung erforderlich."
+                        : "",
                 type,
                 required,
                 defaultValue,
