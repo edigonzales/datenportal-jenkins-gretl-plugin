@@ -55,6 +55,12 @@ class GretlDatenportalSeedBuilderTest {
         jenkinsRule.buildAndAssertSuccess(project);
         assertNotNull(jenkinsRule.jenkins.getItemByFullName("gretl-datenportal-afu", WorkflowJob.class));
 
+        var context = jenkinsRule.jenkins.getItemByFullName("gretl-datenportal-afu", WorkflowJob.class)
+                .getProperty(GretlDatenportalManagedJobProperty.class);
+        assertEquals(GitTestSupport.fileUrl(sourceRepository), context.repositoryUrl());
+        assertEquals("main", context.repositoryBranch());
+        assertEquals("managed-git", context.repositoryMode());
+
         GitTestSupport.addOrganization(sourceRepository, "statistikdienst", "ch.so.statistik.bevoelkerung");
         Files.createDirectories(sourceRepository.resolve("statistikdienst/ch.so.statistik.bevoelkerung/examples"));
         GitTestSupport.commitAll(sourceRepository, "add statistikdienst");

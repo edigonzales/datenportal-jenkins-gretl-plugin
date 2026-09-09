@@ -43,6 +43,10 @@ public final class GretlDatenportalJobGenerator {
     }
 
     public List<String> generate(ScanResult scanResult) throws IOException {
+        return generate(scanResult, ConfiguredTopicRepository.fromGlobalConfiguration(GretlDatenportalGlobalConfiguration.get()));
+    }
+
+    List<String> generate(ScanResult scanResult, ConfiguredTopicRepository repository) throws IOException {
         Jenkins jenkins = Jenkins.get();
         jenkins.checkPermission(Item.CONFIGURE);
 
@@ -64,6 +68,7 @@ public final class GretlDatenportalJobGenerator {
                 throw new IOException("Could not render Pipeline job '" + job.getName() + "'.", ex);
             }
             authorizationSynchronizer.synchronize(job, organization.getPermissionConfiguration());
+            job.getProperty(GretlDatenportalManagedJobProperty.class).configureRepository(repository);
             job.save();
             generatedJobNames.add(job.getFullName());
             activeJobNames.add(job.getFullName());

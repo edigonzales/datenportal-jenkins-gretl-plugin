@@ -165,3 +165,9 @@ Die technische Langform-Doku liegt unter
 - [datenportal-jenkins-dev](https://codeberg.org/edigonzales/datenportal-jenkins-dev)
   ist die kanonische Doku fuer lokalen Jenkins, Offline-Bundle, JCasC und
   Docker-/Airgap-Tests.
+
+Die Standardpipeline kann über `prepareDatenportalWorkspace` je Build einen
+isolierten Checkout oder eine Kopie des Seeder-Snapshots beziehen. Git-Rückschreiben
+ist standardmässig deaktiviert; HTTPS-Credential-ID und Commit-Identität werden
+administrativ konfiguriert. Details stehen unter
+[Themenrepo-Checkout und Konfiguration](docs/biblios/entwicklung/checkout-und-konfiguration.adoc).

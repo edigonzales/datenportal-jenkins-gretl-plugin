@@ -63,37 +63,41 @@ public class GretlDatenportalSeedBuilder extends Builder implements SimpleBuildS
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
-        Path repositoryPath = resolveRepositoryPath(listener);
-        if (repositoryPath == null) {
-            throw new AbortException("Topic repository path is not configured.");
-        }
-
-        ScanResult scanResult = new TopicRepositoryScanner().scan(repositoryPath);
-        for (ValidationMessage message : scanResult.getMessages()) {
-            listener.getLogger().printf("%s: %s%s%n",
-                    message.getSeverity(),
-                    message.getMessage(),
-                    message.getPath() == null ? "" : " (" + message.getPath() + ")");
-        }
-        if (scanResult.hasErrors()) {
-            if (hasAuthorizationErrors(scanResult)) {
-                lockManagedOrganizationJobs();
+        synchronized (TopicRepositoryManager.REPOSITORY_LOCK) {
+            ConfiguredTopicRepository repository = ConfiguredTopicRepository.resolve(topicRepositoryPath, topicRepositoryUrl,
+                    topicRepositoryBranch, GretlDatenportalGlobalConfiguration.get());
+            Path repositoryPath = topicRepositoryManager().resolveRepositoryPath(repository, true, listener.getLogger()::println);
+            if (repositoryPath == null) {
+                throw new AbortException("Topic repository path is not configured.");
             }
-            throw new AbortException("Topic repository validation failed.");
-        }
 
-        GretlDatenportalAuthorizationSynchronizer authorizationSynchronizer =
-                new GretlDatenportalAuthorizationSynchronizer();
-        FreeStyleProject seedJob = resolveManagedSeedJob();
-        if (seedJob != null) {
-            authorizationSynchronizer.synchronizeSeedJob(
-                    seedJob,
-                    scanResult.getTeamDirectory(),
-                    GretlDatenportalGlobalConfiguration.get().getSeedJobOperatorsTeam());
-        }
+            ScanResult scanResult = new TopicRepositoryScanner().scan(repositoryPath);
+            for (ValidationMessage message : scanResult.getMessages()) {
+                listener.getLogger().printf("%s: %s%s%n",
+                        message.getSeverity(),
+                        message.getMessage(),
+                        message.getPath() == null ? "" : " (" + message.getPath() + ")");
+            }
+            if (scanResult.hasErrors()) {
+                if (hasAuthorizationErrors(scanResult)) {
+                    lockManagedOrganizationJobs();
+                }
+                throw new AbortException("Topic repository validation failed.");
+            }
 
-        List<String> generated = new GretlDatenportalJobGenerator().generate(scanResult);
-        listener.getLogger().println("Generated GRETL Datenportal jobs: " + generated);
+            GretlDatenportalAuthorizationSynchronizer authorizationSynchronizer =
+                    new GretlDatenportalAuthorizationSynchronizer();
+            FreeStyleProject seedJob = resolveManagedSeedJob();
+            if (seedJob != null) {
+                authorizationSynchronizer.synchronizeSeedJob(
+                        seedJob,
+                        scanResult.getTeamDirectory(),
+                        GretlDatenportalGlobalConfiguration.get().getSeedJobOperatorsTeam());
+            }
+
+            List<String> generated = new GretlDatenportalJobGenerator().generate(scanResult, repository);
+            listener.getLogger().println("Generated GRETL Datenportal jobs: " + generated);
+        }
     }
 
     private FreeStyleProject resolveManagedSeedJob() {

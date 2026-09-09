@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import jenkins.model.Jenkins;
 
 final class TopicRepositoryManager {
+    static final Object REPOSITORY_LOCK = new Object();
     static final String MANAGED_REPOSITORY_RELATIVE_PATH = "gretl-datenportal/topic-repo";
 
     Path resolveRepositoryPath(GretlDatenportalGlobalConfiguration configuration, boolean update)
@@ -52,27 +53,29 @@ final class TopicRepositoryManager {
             Path checkoutPath,
             boolean update,
             Consumer<String> logger) throws IOException {
-        if (sourcePath == null) {
-            return null;
-        }
+        synchronized (REPOSITORY_LOCK) {
+            if (sourcePath == null) {
+                return null;
+            }
 
-        Path normalizedSource = sourcePath.toAbsolutePath().normalize();
-        Path normalizedCheckout = checkoutPath.toAbsolutePath().normalize();
-        if (!Files.isDirectory(normalizedSource)) {
-            throw new IOException("Working-tree topic repository directory not found: " + normalizedSource);
-        }
+            Path normalizedSource = sourcePath.toAbsolutePath().normalize();
+            Path normalizedCheckout = checkoutPath.toAbsolutePath().normalize();
+            if (!Files.isDirectory(normalizedSource)) {
+                throw new IOException("Working-tree topic repository directory not found: " + normalizedSource);
+            }
 
-        if (Files.isDirectory(normalizedCheckout) && !update) {
+            if (Files.isDirectory(normalizedCheckout) && !update) {
+                return normalizedCheckout;
+            }
+
+            Files.createDirectories(normalizedCheckout.getParent());
+            deleteRecursively(normalizedCheckout);
+            Files.createDirectories(normalizedCheckout);
+            log(logger, "Creating working-tree topic repository snapshot from: " + normalizedSource);
+            log(logger, "Working-tree snapshot destination: " + normalizedCheckout);
+            copyWorkingTree(normalizedSource, normalizedCheckout);
             return normalizedCheckout;
         }
-
-        Files.createDirectories(normalizedCheckout.getParent());
-        deleteRecursively(normalizedCheckout);
-        Files.createDirectories(normalizedCheckout);
-        log(logger, "Creating working-tree topic repository snapshot from: " + normalizedSource);
-        log(logger, "Working-tree snapshot destination: " + normalizedCheckout);
-        copyWorkingTree(normalizedSource, normalizedCheckout);
-        return normalizedCheckout;
     }
 
     Path ensureManagedCheckout(
@@ -81,30 +84,38 @@ final class TopicRepositoryManager {
             Path checkoutPath,
             boolean update,
             Consumer<String> logger) throws IOException, InterruptedException {
-        if (repositoryUrl == null || repositoryUrl.isBlank()) {
-            return null;
-        }
+        synchronized (REPOSITORY_LOCK) {
+            if (repositoryUrl == null || repositoryUrl.isBlank()) {
+                return null;
+            }
 
-        Path normalizedCheckoutPath = checkoutPath.toAbsolutePath().normalize();
-        Files.createDirectories(normalizedCheckoutPath.getParent());
+            java.net.URI remote;
+            try { remote = java.net.URI.create(repositoryUrl); }
+            catch (IllegalArgumentException ex) { throw new IOException("Invalid topic Git URL."); }
+            if (!("https".equals(remote.getScheme()) || "file".equals(remote.getScheme())) || remote.getUserInfo() != null)
+                throw new IOException("Topic Git URL must use HTTPS or file, without embedded credentials.");
+            if (normalizeBranch(branch).startsWith("-")) throw new IOException("Invalid topic Git branch.");
+            Path normalizedCheckoutPath = checkoutPath.toAbsolutePath().normalize();
+            Files.createDirectories(normalizedCheckoutPath.getParent());
 
-        if (!isGitCheckout(normalizedCheckoutPath)) {
-            recreateCheckout(normalizedCheckoutPath, repositoryUrl, branch, logger);
+            if (!isGitCheckout(normalizedCheckoutPath)) {
+                recreateCheckout(normalizedCheckoutPath, repositoryUrl, branch, logger);
+                return normalizedCheckoutPath;
+            }
+
+            if (!update) {
+                return normalizedCheckoutPath;
+            }
+
+            log(logger, "Updating managed topic repository checkout: " + normalizedCheckoutPath);
+            runGit(normalizedCheckoutPath, logger, "remote", "set-url", "origin", repositoryUrl);
+            runGit(normalizedCheckoutPath, logger, "fetch", "--prune", "origin");
+            String normalizedBranch = normalizeBranch(branch);
+            runGit(normalizedCheckoutPath, logger, "checkout", "-B", normalizedBranch, "origin/" + normalizedBranch);
+            runGit(normalizedCheckoutPath, logger, "reset", "--hard", "origin/" + normalizedBranch);
+            runGit(normalizedCheckoutPath, logger, "clean", "-fd");
             return normalizedCheckoutPath;
         }
-
-        if (!update) {
-            return normalizedCheckoutPath;
-        }
-
-        log(logger, "Updating managed topic repository checkout: " + normalizedCheckoutPath);
-        runGit(normalizedCheckoutPath, logger, "remote", "set-url", "origin", repositoryUrl);
-        runGit(normalizedCheckoutPath, logger, "fetch", "--prune", "origin");
-        String normalizedBranch = normalizeBranch(branch);
-        runGit(normalizedCheckoutPath, logger, "checkout", "-B", normalizedBranch, "origin/" + normalizedBranch);
-        runGit(normalizedCheckoutPath, logger, "reset", "--hard", "origin/" + normalizedBranch);
-        runGit(normalizedCheckoutPath, logger, "clean", "-fd");
-        return normalizedCheckoutPath;
     }
 
     private Path managedRepositoryPath() throws IOException {
@@ -148,7 +159,7 @@ final class TopicRepositoryManager {
         }
     }
 
-    private void copyWorkingTree(Path sourcePath, Path checkoutPath) throws IOException {
+    void copyWorkingTree(Path sourcePath, Path checkoutPath) throws IOException {
         Files.walkFileTree(sourcePath, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes)
@@ -193,27 +204,8 @@ final class TopicRepositoryManager {
     }
 
     private void runGit(Path workdir, Consumer<String> logger, String... args) throws IOException, InterruptedException {
-        List<String> command = new ArrayList<>();
-        command.add("git");
-        command.addAll(List.of(args));
-
-        Process process = new ProcessBuilder(command)
-                .directory(workdir.toFile())
-                .redirectErrorStream(true)
-                .start();
-
-        String output;
-        try (InputStream inputStream = process.getInputStream()) {
-            output = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8).trim();
-        }
-
-        int exitCode = process.waitFor();
-        if (!output.isBlank()) {
-            log(logger, output);
-        }
-        if (exitCode != 0) {
-            throw new IOException("Git command failed (" + String.join(" ", command) + "): " + output);
-        }
+        String output = TopicGit.run(workdir, args);
+        if (!output.isBlank()) log(logger, output);
     }
 
     private void deleteRecursively(Path path) throws IOException {

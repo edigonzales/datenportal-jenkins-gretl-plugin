@@ -28,6 +28,11 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     private int seedJobBuildsToKeep = -1;
     private String seedJobOperatorsTeam = "gretl-datenportal-seed-operators";
 
+    private String topicRepositoryCredentialsId = "";
+    private boolean topicRepositoryWriteBackEnabled;
+    private String topicRepositoryCommitterName = "";
+    private String topicRepositoryCommitterEmail = "";
+
     public GretlDatenportalGlobalConfiguration() {
         load();
     }
@@ -165,6 +170,22 @@ public class GretlDatenportalGlobalConfiguration extends GlobalConfiguration {
     public boolean isTopicRepositoryConfigured() {
         return !getTopicRepositoryUrl().isBlank() || !getTopicRepositoryPath().isBlank();
     }
+
+    public String getTopicRepositoryCredentialsId() { return topicRepositoryCredentialsId == null ? "" : topicRepositoryCredentialsId; }
+    @DataBoundSetter
+    public void setTopicRepositoryCredentialsId(String value) { topicRepositoryCredentialsId = value == null ? "" : value.strip(); save(); }
+
+    public String getTopicRepositoryCommitterName() { return topicRepositoryCommitterName == null ? "" : topicRepositoryCommitterName; }
+    @DataBoundSetter
+    public void setTopicRepositoryCommitterName(String value) { topicRepositoryCommitterName = value == null ? "" : value.strip(); save(); }
+
+    public String getTopicRepositoryCommitterEmail() { return topicRepositoryCommitterEmail == null ? "" : topicRepositoryCommitterEmail; }
+    @DataBoundSetter
+    public void setTopicRepositoryCommitterEmail(String value) { topicRepositoryCommitterEmail = value == null ? "" : value.strip(); save(); }
+
+    public boolean isTopicRepositoryWriteBackEnabled() { return topicRepositoryWriteBackEnabled; }
+    @DataBoundSetter
+    public void setTopicRepositoryWriteBackEnabled(boolean value) { topicRepositoryWriteBackEnabled = value; save(); }
 
     @Override
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {

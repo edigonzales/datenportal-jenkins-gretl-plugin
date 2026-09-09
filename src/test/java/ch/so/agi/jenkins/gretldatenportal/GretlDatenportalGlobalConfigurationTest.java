@@ -13,6 +13,23 @@ class GretlDatenportalGlobalConfigurationTest {
 
     @Test
     @WithJenkins
+    void writeBackDefaultsToOffAndConfigurationSurvivesReload(JenkinsRule j) throws Exception {
+        var config = GretlDatenportalGlobalConfiguration.get();
+        assertFalse(config.isTopicRepositoryWriteBackEnabled());
+        config.setTopicRepositoryCredentialsId("git-token");
+        config.setTopicRepositoryWriteBackEnabled(true);
+        config.setTopicRepositoryCommitterName("Delivery Bot");
+        config.setTopicRepositoryCommitterEmail("bot@example.invalid");
+        config.save();
+        config.load();
+        assertEquals("git-token", config.getTopicRepositoryCredentialsId());
+        assertTrue(config.isTopicRepositoryWriteBackEnabled());
+        assertEquals("Delivery Bot", config.getTopicRepositoryCommitterName());
+        assertEquals("bot@example.invalid", config.getTopicRepositoryCommitterEmail());
+    }
+
+    @Test
+    @WithJenkins
     void defaultsAreReturnedForUnsetSeedJobFields(JenkinsRule jenkinsRule) {
         GretlDatenportalGlobalConfiguration configuration = GretlDatenportalGlobalConfiguration.get();
 

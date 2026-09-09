@@ -79,3 +79,39 @@ Entwicklung wird stattdessen `THEMEN_REPO_MODE=working-tree` gesetzt.
   dokumentiert.
 * Die lokale Jenkins-Konfiguration, die diese Werte setzt, liegt im Repo
   link:https://codeberg.org/edigonzales/datenportal-jenkins-dev[datenportal-jenkins-dev].
+
+== Isolierte Lieferverarbeitung und Git-Rückschreiben
+
+Zusätzliche globale Felder:
+
+* `topicRepositoryCredentialsId`: ID eines Jenkins-Credentials vom Typ
+  Benutzername/Passwort; für HTTPS-Git ist das Passwort ein Repository-Token.
+* `topicRepositoryWriteBackEnabled`: ausdrücklich freizugebendes Rückschreiben,
+  standardmässig `false`.
+* `topicRepositoryCommitterName` und `topicRepositoryCommitterEmail`: technische
+  Identität des automatischen Commits, bei Rückschreiben obligatorisch.
+
+Seed-Overrides für URL, Branch und Modus werden auf dem erzeugten Job gespeichert.
+`prepareDatenportalWorkspace` benutzt diese aufgelöste Konfiguration und erstellt
+`<workspace>/topic-repo` für den jeweiligen Build. `managed-git` erhält den aktuellen
+Remote-Stand; `working-tree` eine Kopie des Seeder-Snapshots. Die Snapshot-Kopie und
+Seeder-Aktualisierung verwenden denselben Monitor. Vorschauen schreiben weder den
+externen Arbeitsbaum noch den Seeder-Snapshot zurück und erben keine Kandidaten
+vorheriger Vorschauen.
+
+Der Step benötigt gegenwärtig einen lokalen Controller-Workspace. Er liefert
+Pfad, Repository-Kontext, Ausgangsrevision, Credential-ID, Schreibfreigabe und
+Commit-Identität an die Pipeline. Ein `working-tree`-Snapshot besitzt kein `.git`;
+seine Ausgangsrevision ist entsprechend leer. In der Dev-Laufzeit darf ein
+schreibender Build nur ein lokales `file://`-Testrepository verwenden.
+
+Für HTTPS werden Credentials aus Jenkins bezogen und über ein kurzlebiges
+Askpass-Skript an die Git-CLI gebunden. Das Skript enthält keine Zugangsdaten;
+diese liegen nur in der Prozessumgebung. URL und Kommandozeile bleiben frei von
+Tokens. Die Standardpipeline bindet für Gradles Git-Schritt dieselbe Credential-ID
+mit `gitUsernamePassword` und der Git-Installation `Default`.
+
+`shared/Jenkinsfile` aus dem Themenrepo hält die Lockable-Resources-Sperre
+`datenportal-topic-repository` vom Erstellen des Build-Checkouts bis zum Ende der
+Lieferverarbeitung. Sie serialisiert alle Standardjobs organisationsübergreifend.
+Benutzerdefinierte Jenkinsfiles müssen diese Laufzeitregeln selbst übernehmen.
