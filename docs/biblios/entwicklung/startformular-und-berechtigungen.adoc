@@ -15,6 +15,8 @@ Unterstuetzte Felder:
 
 * `ORGANISATION`
 * `DATASET`
+* `PUBLICATION_MODE`: `delivery` (Default) oder `repository-metadata`
+* `RELOAD_PORTAL`: optionaler Reload nach S3-Übernahme, Default `false`
 * `METADATA_FILE`
 * `DATA_FILE`
 * `COMMENT`
@@ -43,10 +45,21 @@ Jenkinsfile nicht an Gradle weitergereicht; auch direkte Gradle-Aufrufe
 ignorieren `seriesId`, wenn keine Datendatei vorliegt. Die technischen
 Parameternamen `SERIES_ID` und `seriesId` bleiben erhalten.
 
-Mindestens eine der beiden Upload-Dateien muss vorhanden sein:
+Im Modus `delivery` muss mindestens `METADATA_FILE` oder `DATA_FILE` vorhanden
+sein. `repository-metadata` übernimmt das ausgewählte Repository-Datenblatt
+ohne Upload. Beim Umschalten werden Uploadfelder und Ausgabe geleert und
+deaktiviert; technisch mitgesendete Uploads werden serverseitig abgewiesen.
+Die Formular-Uploaddefinition erlaubt `.xtf`/`.xml` bis 10 MB und CSV bis
+100 MB. Unbekannte Moduswerte sind Fehler. Die serverseitigen Regeln gelten auch ohne
+JavaScript und in der Parameterprüfung der Standardpipeline.
 
-* `METADATA_FILE`
-* `DATA_FILE`
+`RELOAD_PORTAL` gilt für beide Modi und fordert einen Reload erst nach
+erfolgreicher S3-Übernahme an. URL und Token stammen aus administrativer
+Konfiguration. Ohne S3-Freigabe bleibt der Lauf Vorschau ohne Reload.
+
+Nach einem Plugin-Update Jenkins mit dem neuen HPI starten und erneut seeden,
+damit die generierten Jobparameter und Pipeline aktualisiert werden. Seeden
+allein übernimmt kein Datenblatt in S3 und erzeugt keinen initialen Gesamtstand.
 
 == Berechtigungsmodell
 
