@@ -417,7 +417,7 @@ public class GretlDatenportalRootAction implements RootAction {
 
     private StartFormSubmission createSubmission(StaplerRequest2 req) throws IOException, ServletException {
         Map<String, String> values = new HashMap<>();
-        for (String key : List.of("ORGANISATION", "DATASET", "COMMENT", "SERIES_ID")) {
+        for (String key : List.of("ORGANISATION", "DATASET", "COMMENT", "SERIES_ID", "PUBLICATION_MODE", "RELOAD_PORTAL")) {
             values.put(key, req.getParameter(key) == null ? "" : req.getParameter(key));
         }
         Map<String, UploadedFileInfo> files = new HashMap<>();
@@ -440,6 +440,8 @@ public class GretlDatenportalRootAction implements RootAction {
         values.add(new StringParameterValue("DATASET", req.getParameter("DATASET")));
         values.add(new TextParameterValue("COMMENT", req.getParameter("COMMENT") == null ? "" : req.getParameter("COMMENT")));
         values.add(new StringParameterValue("SERIES_ID", req.getParameter("SERIES_ID") == null ? "" : req.getParameter("SERIES_ID")));
+        values.add(new StringParameterValue("PUBLICATION_MODE", req.getParameter("PUBLICATION_MODE") == null ? "delivery" : req.getParameter("PUBLICATION_MODE")));
+        values.add(new hudson.model.BooleanParameterValue("RELOAD_PORTAL", Boolean.parseBoolean(req.getParameter("RELOAD_PORTAL"))));
         addFileParameter(values, req, "METADATA_FILE");
         addFileParameter(values, req, "DATA_FILE");
         return values;

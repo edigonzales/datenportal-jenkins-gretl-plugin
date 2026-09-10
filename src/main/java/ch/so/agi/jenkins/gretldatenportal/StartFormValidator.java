@@ -26,7 +26,12 @@ public final class StartFormValidator {
             validateFile("DATA_FILE", submission.file("DATA_FILE"), List.of("csv"), DATA_FILE_MAX_BYTES, messages);
         }
 
-        if (!submission.hasFile("METADATA_FILE") && !submission.hasFile("DATA_FILE")) {
+        String mode = submission.value("PUBLICATION_MODE");
+        if (mode == null || mode.isBlank()) mode = "delivery";
+        if (!List.of("delivery", "repository-metadata").contains(mode)) messages.add(error("Unknown PUBLICATION_MODE."));
+        if ("repository-metadata".equals(mode) && (submission.hasFile("METADATA_FILE") || submission.hasFile("DATA_FILE")))
+            messages.add(error("Repository metadata mode does not accept uploads."));
+        if ("delivery".equals(mode) && !submission.hasFile("METADATA_FILE") && !submission.hasFile("DATA_FILE")) {
             messages.add(error("At least one of METADATA_FILE or DATA_FILE is required."));
         }
         if (dataset.getDefinition().isSeries() && submission.hasFile("DATA_FILE")

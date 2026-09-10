@@ -74,8 +74,10 @@ Für lokale Änderungen am Themenrepo kann die Dev-Umgebung den Modus
 externen Arbeitsbaum inklusive uncommitteter und untracked Dateien in einen
 Jenkins-internen Snapshot. Der Snapshot wird nur beim Seed-Lauf aktualisiert;
 Jobs sind weiterhin keine Live-Sicht auf das externe Arbeitsverzeichnis. Der
-Produktionsmodus `managed-git` verarbeitet dagegen den committed Stand des
-konfigurierten Branches.
+Repository-Modus `managed-git` verarbeitet dagegen den committed Stand des
+konfigurierten Branches. Er ist auch im lokalen Dev-Betrieb verwendbar und
+aktiviert allein kein Git-Rückschreiben. Laufzeit-ENV und Defaults stehen in der
+[zentralen Jenkins-Konfigurationsreferenz](https://codeberg.org/edigonzales/datenportal-jenkins-dev/src/branch/main/docs/biblios/entwicklung/referenz-konfiguration.adoc).
 
 ## Seed-Job
 
@@ -148,9 +150,11 @@ Organisationen synchronisiert. Eine ungueltige Teams- oder
 Berechtigungskonfiguration bricht den Lauf ab; die letzte gueltige Seeder-ACL
 bleibt dabei erhalten.
 
-Die generierten Datenportal-Jobs sind weiterhin keine Live-Sicht auf das
-Themenrepo. Repo-Aenderungen werden erst nach dem naechsten Seed-Lauf
-materialisiert.
+Jobdefinitionen, Berechtigungen und die Themenauswahl werden beim Seed
+materialisiert. Für den Build kopiert `working-tree` diesen Seeder-Snapshot;
+`managed-git` erstellt dagegen einen frischen Checkout des konfigurierten
+Remote-Branches. Änderungen am Repository-Kontext der Jobs benötigen einen
+neuen Seed.
 
 ## Langform-Doku
 
@@ -171,3 +175,10 @@ isolierten Checkout oder eine Kopie des Seeder-Snapshots beziehen. Git-Rückschr
 ist standardmässig deaktiviert; HTTPS-Credential-ID und Commit-Identität werden
 administrativ konfiguriert. Details stehen unter
 [Themenrepo-Checkout und Konfiguration](docs/biblios/entwicklung/checkout-und-konfiguration.adoc).
+
+Die Startvariante `PUBLICATION_MODE=repository-metadata` gleicht ein einzelnes
+Repository-Datenblatt ohne Upload ab. `delivery` bleibt der Default und verlangt
+mindestens eine Datei. `RELOAD_PORTAL` fordert optional einen Reload nach der
+S3-Übernahme an. Die Freigabe zum Publizieren wird administrativ konfiguriert;
+`working-tree` verbietet ausschliesslich Git-Schreiben, nicht eine ausdrücklich
+aktivierte lokale Garage-Publikation.

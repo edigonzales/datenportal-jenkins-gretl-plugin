@@ -21,6 +21,9 @@ public final class DefaultGuiDefinitionFactory {
                 "",
                 List.of(),
                 null));
+        fields.add(new GuiFieldDefinition("PUBLICATION_MODE", "Verarbeitung", "", ParameterType.CHOICE,
+                true, "delivery", false, List.of("delivery", "repository-metadata"), null, null, null, "", List.of(), null));
+        fields.add(field("RELOAD_PORTAL", "Portal nach Veröffentlichung neu laden", ParameterType.BOOLEAN, false, "false", false));
         fields.add(new GuiFieldDefinition(
                 "METADATA_FILE",
                 "Metadaten hochladen",

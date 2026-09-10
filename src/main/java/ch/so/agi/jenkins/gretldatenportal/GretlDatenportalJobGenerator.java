@@ -116,6 +116,8 @@ public final class GretlDatenportalJobGenerator {
                 "DATASET",
                 organization.getDatasets().stream().map(DatasetEntry::getId).toArray(String[]::new),
                 "Datensatz"));
+        parameters.add(new ChoiceParameterDefinition("PUBLICATION_MODE", new String[]{"delivery", "repository-metadata"}, "Lieferung verarbeiten oder Datenblatt aus Repository übernehmen"));
+        parameters.add(new hudson.model.BooleanParameterDefinition("RELOAD_PORTAL", false, "Portal nach Veröffentlichung neu laden"));
         parameters.add(new StashedFileParameterDefinition("METADATA_FILE"));
         parameters.add(new StashedFileParameterDefinition("DATA_FILE"));
         parameters.add(new TextParameterDefinition("COMMENT", "", "Kommentar"));

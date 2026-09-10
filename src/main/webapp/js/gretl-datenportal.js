@@ -59,6 +59,7 @@
                 });
             });
 
+            var modeInput = form.querySelector('[name="PUBLICATION_MODE"]');
             var dataInput = form.querySelector('[name="DATA_FILE"]');
             var issueField = form.querySelector('[data-gdp-field="SERIES_ID"]');
             var issueInput = issueField ? issueField.querySelector('[name="SERIES_ID"]') : null;
@@ -79,7 +80,21 @@
                 }
             }
 
-            updateIssueField();
+            function updatePublicationMode() {
+                var repositoryMode = modeInput && modeInput.value === "repository-metadata";
+                all(form, "[data-gdp-file-input]").forEach(function (input) {
+                    input.disabled = repositoryMode;
+                    setHidden(closest(input, "[data-gdp-field]"), repositoryMode);
+                    if (repositoryMode) input.value = "";
+                });
+                all(form, "[data-gdp-file-name]").forEach(function (target) {
+                    var input = form.querySelector('[name="' + target.getAttribute("data-gdp-file-name") + '"]');
+                    target.textContent = input && input.files && input.files.length ? input.files[0].name : "Keine Datei ausgewählt.";
+                });
+                updateIssueField();
+            }
+            if (modeInput) modeInput.addEventListener("change", updatePublicationMode);
+            updatePublicationMode();
             all(form, "[data-gdp-file-input]").forEach(function (input) {
                 input.addEventListener("change", function () {
                     updateIssueField();
@@ -94,7 +109,7 @@
             });
             form.addEventListener("reset", function () {
                 window.setTimeout(function () {
-                    updateIssueField();
+                    updatePublicationMode();
                     all(form, "[data-gdp-file-name]").forEach(function (target) {
                         target.textContent = "Keine Datei ausgewählt.";
                     });

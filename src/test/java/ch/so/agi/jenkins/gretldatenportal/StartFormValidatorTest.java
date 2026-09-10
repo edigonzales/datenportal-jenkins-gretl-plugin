@@ -13,6 +13,27 @@ import org.junit.jupiter.params.provider.ValueSource;
 class StartFormValidatorTest {
     private final StartFormValidator validator = new StartFormValidator();
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void acceptsRepositoryMetadataWithoutUploadsOrIssue(boolean series) {
+        assertFalse(hasErrors(validator.validate(job(series), submission(
+                Map.of("ORGANISATION", "afu", "DATASET", "ch.so.dataset", "PUBLICATION_MODE", "repository-metadata"), Map.of()))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"METADATA_FILE", "DATA_FILE"})
+    void rejectsUploadsInRepositoryMode(String field) {
+        assertTrue(hasErrors(validator.validate(job(false), submission(
+                Map.of("ORGANISATION", "afu", "DATASET", "ch.so.dataset", "PUBLICATION_MODE", "repository-metadata"),
+                Map.of(field, new UploadedFileInfo(field.equals("DATA_FILE") ? "data.csv" : "metadata.xtf", 100))))));
+    }
+
+    @Test void rejectsUnknownMode() {
+        assertTrue(hasErrors(validator.validate(job(false), submission(
+                Map.of("ORGANISATION", "afu", "DATASET", "ch.so.dataset", "PUBLICATION_MODE", "unknown"),
+                Map.of("METADATA_FILE", new UploadedFileInfo("metadata.xtf",100))))));
+    }
+
     @Test
     void acceptsSeriesMetadataWithoutIssue() {
         List<ValidationMessage> messages = validator.validate(

@@ -86,15 +86,18 @@
                                             </label>
 
                                             <j:choose>
+                                                <j:when test="${field.type.id == 'boolean'}">
+                                                    <input id="${field.id}" name="${field.id}" type="checkbox" value="true" />
+                                                </j:when>
                                                 <j:when test="${field.type.id == 'choice'}">
                                                     <select id="${field.id}" name="${field.id}" class="gdp-control gdp-select">
                                                         <j:forEach var="choice" items="${field.values}">
                                                             <j:choose>
                                                                 <j:when test="${choice == field.defaultValue}">
-                                                                    <option value="${choice}" selected="selected">${choice}</option>
+                                                                    <option value="${choice}" selected="selected">${field.id == 'PUBLICATION_MODE' ? (choice == 'delivery' ? 'Lieferung verarbeiten' : 'Datenblatt aus Repository übernehmen') : choice}</option>
                                                                 </j:when>
                                                                 <j:otherwise>
-                                                                    <option value="${choice}">${choice}</option>
+                                                                    <option value="${choice}">${field.id == 'PUBLICATION_MODE' ? (choice == 'delivery' ? 'Lieferung verarbeiten' : 'Datenblatt aus Repository übernehmen') : choice}</option>
                                                                 </j:otherwise>
                                                             </j:choose>
                                                         </j:forEach>
