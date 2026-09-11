@@ -616,7 +616,7 @@ Manuell in Jenkins pruefen:
 
 Datei:
 
-- `../datenportal-themenrepo/docs/biblios/entwicklung/seed-und-bootstrap.adoc`
+- `../datenportal-themenrepo/docs/biblios/seed-und-bootstrap.adoc`
 
 Aenderungen:
 

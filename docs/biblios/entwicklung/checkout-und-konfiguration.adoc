@@ -37,7 +37,7 @@ Konfiguration; der Seed-Builder besitzt keinen separaten Modus-Override.
 ENV-Zuordnung, Defaults je Startvariante und JCasC-Auswahl beschreibt die
 link:https://codeberg.org/edigonzales/datenportal-jenkins-dev/src/branch/main/docs/biblios/entwicklung/referenz-konfiguration.adoc[zentrale Jenkins-Konfigurationsreferenz]. Insbesondere
 sind Dev/Produktion, Repository-Modus, S3-Freigabe und Git-Schreibfreigabe
-getrennte Werte. Die link:https://codeberg.org/edigonzales/datenportal-dev-stack/src/branch/main/docs/biblios/entwicklung/inbetriebnahme.adoc[Stack-Inbetriebnahme]
+getrennte Werte. Die link:https://codeberg.org/edigonzales/datenportal-dev-stack/src/branch/main/docs/biblios/inbetriebnahme.adoc[Stack-Inbetriebnahme]
 verbindet Seeder, administrativen S3-Erstaufbau und Lieferformular. Ein
 Seeder-Lauf alleine publiziert keinen Gesamtstand.
 
